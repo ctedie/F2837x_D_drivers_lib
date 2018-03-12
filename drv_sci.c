@@ -5,9 +5,9 @@
  *  \{
  ********************************************************************************************************************/
 /****************************************************** COMECA *******************************************************
- *  \file		drv_uart.c
+ *  \file		drv_sci.c
  *  
- *  \brief		The UART driver source file
+ *  \brief		The SCI driver source file
  *
  *  \details	
  *
@@ -20,22 +20,22 @@
 
 #include "DSP2834x_Device.h"
 
-#include "drv_uart.h"
+#include "drv_sci.h"
 
 /* Macro definition ------------------------------------------------------------------------------------------------*/
 /* Constant definition ---------------------------------------------------------------------------------------------*/
 /* Type definition  ------------------------------------------------------------------------------------------------*/
 
-/** The UART Handle structure */
+/** The SCI Handle structure */
 typedef struct
 {
     volatile struct SCI_REGS *sci;
 
-    drvUartReceiveCallback_t cbReception;
+    drvSciReceiveCallback_t cbReception;
     void* pReceptionData;
-    drvUartTransmitCallback_t cbTransmission;
+    drvSciTransmitCallback_t cbTransmission;
     void* pTransmitionData;
-    drvUartEndOfTransmitionCallback_t cbEndOfTransmition;
+    drvSciEndOfTransmitionCallback_t cbEndOfTransmition;
     void* pEndOfTransmitionArg;
 
 
@@ -63,7 +63,7 @@ UARTHandle_t m_UARTList[NB_SERIAL] =
 };
 
 /* Private functions prototypes ------------------------------------------------------------------------------------*/
-static bool setBaudRate(volatile struct SCI_REGS *pSci, drvUartSpeed_t speed);
+static bool setBaudRate(volatile struct SCI_REGS *pSci, drvSciSpeed_t speed);
 
 /* Private functions -----------------------------------------------------------------------------------------------*/
 
@@ -74,11 +74,11 @@ static bool setBaudRate(volatile struct SCI_REGS *pSci, drvUartSpeed_t speed);
  *
  * \return
  **********************************************************/
-static bool setBaudRate(volatile struct SCI_REGS *pSci, drvUartSpeed_t speed)
+static bool setBaudRate(volatile struct SCI_REGS *pSci, drvSciSpeed_t speed)
 {
     uint16_t brr_Value;
 
-    //TODO CPU clock
+    //TODO Get CPU clock instead of 300000000
     brr_Value = 300000000 / ((uint32_t)speed * 8 * (SysCtrlRegs.LOSPCP.bit.LSPCLK * 2));
     pSci->SCIHBAUD = (brr_Value >> 8) & 0xFF;
     pSci->SCILBAUD = (brr_Value & 0xFF);
@@ -97,28 +97,48 @@ static bool setBaudRate(volatile struct SCI_REGS *pSci, drvUartSpeed_t speed)
  *
  * \return
  *********************************************************/
-drvUartReturn_t DRV_UART_Init(drvUartNumber_t uartNb, drvUartConfig_t *pConfig)
+drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
 {
-    drvUartReturn_t ret = DRV_UART_SUCCESS;
-
+    drvSciReturn_t ret = DRV_SCI_SUCCESS;
+    UARTHandle_t* pHandle = &m_UARTList[uartNb];
     if(pConfig == NULL)
     {
         //Error
-        return DRV_UART_BAD_CONFIG;
+        return DRV_SCI_BAD_CONFIG;
     }
 
-    m_UARTList[uartNb].cbReception = pConfig->cbReception;
-    m_UARTList[uartNb].pReceptionData = pConfig->pReceptionData;
-    m_UARTList[uartNb].cbTransmission = pConfig->cbTransmission;
-    m_UARTList[uartNb].pTransmitionData = pConfig->pTransmitionData;
-    m_UARTList[uartNb].cbEndOfTransmition = pConfig->cbEndOfTransmition;
-    m_UARTList[uartNb].pEndOfTransmitionArg = pConfig->pEndOfTransmitionArg;
+    pHandle->sci->SCICCR.all = 0;
+    pHandle->sci->SCICTL1.bit.SWRESET = 0;  //Set in reset state
+
+    pHandle->cbReception = pConfig->cbReception;
+    pHandle->pReceptionData = pConfig->pReceptionData;
+    pHandle->cbTransmission = pConfig->cbTransmission;
+    pHandle->pTransmitionData = pConfig->pTransmitionData;
+    pHandle->cbEndOfTransmition = pConfig->cbEndOfTransmition;
+    pHandle->pEndOfTransmitionArg = pConfig->pEndOfTransmitionArg;
+
+    /* Data size config */
+    pHandle->sci->SCICCR.bit.SCICHAR = pConfig->dataSize;
+
+    /* Parity Config */
+    if (pConfig->parity != DRV_SCI_PARITY_NONE)
+    {
+        pHandle->sci->SCICCR.bit.PARITYENA = 1;
+        pHandle->sci->SCICCR.bit.PARITY = pConfig->parity - 1;
+    }
+
+    /* Stop bit config */
+    pHandle->sci->SCICCR.bit.STOPBITS = pConfig->stopBit;
 
     /* Baud Rate config */
-    setBaudRate( m_UARTList[uartNb].sci, pConfig->baudrate);
+    setBaudRate(pHandle->sci, pConfig->baudrate);
 
+    pHandle->sci->SCICTL1.bit.RXENA = 1;
+//    pHandle->sci->SCICTL2.bit.RXBKINTENA;
+    pHandle->sci->SCICTL1.bit.TXENA = 1;
 
-
+    pHandle->sci->SCICTL1.bit.SWRESET = 1; //Release from reset state
+    pHandle->initOk = true;
     return ret;
 }
 
@@ -129,14 +149,24 @@ drvUartReturn_t DRV_UART_Init(drvUartNumber_t uartNb, drvUartConfig_t *pConfig)
  *
  * \return
  **********************************************************/
-drvUartReturn_t DRV_UART_Write(void)
+drvSciReturn_t DRV_SCI_WriteChar(drvSciNumber_t uartNb, uint16_t car)
 {
-    return true;
+    m_UARTList[uartNb].sci->SCITXBUF = car;
+
+    return DRV_SCI_SUCCESS;
 }
 
-drvUartReturn_t DRV_UART_Read(void)
+/***********************************************************
+ * \brief
+ *
+ * \param
+ *
+ * \return
+ **********************************************************/
+drvSciReturn_t DRV_SCI_ReadChar(drvSciNumber_t uartNb, uint16_t* pCar)
 {
-    return true;
+    *pCar = m_UARTList[uartNb].sci->SCIRXBUF.bit.RXDT;
+    return DRV_SCI_SUCCESS;
 }
 
 /** \} */
