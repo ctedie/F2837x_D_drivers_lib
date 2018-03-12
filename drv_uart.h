@@ -16,6 +16,11 @@
 #ifndef DRV_UART_H_
 #define DRV_UART_H_
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /* Includes --------------------------------------------------------------------------------------------------------*/
 #include <stdbool.h>
 #include <stdint.h>
@@ -99,10 +104,15 @@ typedef struct
 }drvUartConfig_t;
 
 /* Public variables ------------------------------------------------------------------------------------------------*/
+/* Public functions ------------------------------------------------------------------------------------------------*/
 
 drvUartReturn_t DRV_UART_Init(drvUartNumber_t uartNb, drvUartConfig_t *pConfig);
 drvUartReturn_t DRV_UART_Write(void);
 drvUartReturn_t DRV_UART_Read(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DRV_UART_H_ */
 
