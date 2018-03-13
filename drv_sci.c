@@ -163,12 +163,17 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
  *
  * \return
  **********************************************************/
-drvSciReturn_t DRV_SCI_WriteChar(drvSciNumber_t uartNb, uint16_t car)
+drvSciReturn_t DRV_SCI_WriteChar_NonBlocking(drvSciNumber_t uartNb, uint16_t car)
 {
-    while(!m_UARTList[uartNb].sci->SCICTL2.bit.TXRDY);
-    m_UARTList[uartNb].sci->SCITXBUF.all = car;
+    drvSciReturn_t ret = DRV_SCI_TX_BUSY;
 
-    return DRV_SCI_SUCCESS;
+    if(m_UARTList[uartNb].sci->SCICTL2.bit.TXRDY)
+    {
+        m_UARTList[uartNb].sci->SCITXBUF.all = car;
+        ret = DRV_SCI_NO_INPUT_CHAR;
+    }
+
+    return ret;
 }
 
 /***********************************************************
@@ -178,15 +183,13 @@ drvSciReturn_t DRV_SCI_WriteChar(drvSciNumber_t uartNb, uint16_t car)
  *
  * \return
  **********************************************************/
-drvSciReturn_t DRV_SCI_ReadChar(drvSciNumber_t uartNb, uint16_t* pCar)
+drvSciReturn_t DRV_SCI_ReadChar_NonBlocking(drvSciNumber_t uartNb, uint16_t* pCar)
 {
     drvSciReturn_t ret = DRV_SCI_NO_INPUT_CHAR;
-    uint16_t dataNb = 1;
-    uint16_t readCount = 0;
-    while((readCount < dataNb) && m_UARTList[uartNb].sci->SCIRXST.bit.RXRDY)
+
+    if(m_UARTList[uartNb].sci->SCIRXST.bit.RXRDY)
     {
         *pCar = m_UARTList[uartNb].sci->SCIRXBUF.bit.SAR;
-        readCount++;
         ret = DRV_SCI_SUCCESS;
     }
 

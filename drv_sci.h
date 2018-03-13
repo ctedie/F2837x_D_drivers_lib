@@ -41,7 +41,8 @@ typedef enum
     DRV_SCI_NOT_INIT,       /**!< SERIAL_LINK_NOT_INIT    */
     DRV_SCI_TX_ERROR,       /**!< SERIAL_LINK_TX_ERROR    */
     DRV_SCI_BAD_ID,          /**!< SERIAL_LINK_BAD_ID      */
-    DRV_SCI_NO_INPUT_CHAR
+    DRV_SCI_NO_INPUT_CHAR,
+    DRV_SCI_TX_BUSY
 }drvSciReturn_t;
 
 /** The SCI number enum */
@@ -113,8 +114,8 @@ typedef struct
 /* Public functions ------------------------------------------------------------------------------------------------*/
 
 drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig);
-drvSciReturn_t DRV_SCI_WriteChar(drvSciNumber_t uartNb, uint16_t car);
-drvSciReturn_t DRV_SCI_ReadChar(drvSciNumber_t uartNb, uint16_t* pCar);
+drvSciReturn_t DRV_SCI_WriteChar_NonBlocking(drvSciNumber_t uartNb, uint16_t car);
+drvSciReturn_t DRV_SCI_ReadChar_NonBlocking(drvSciNumber_t uartNb, uint16_t* pCar);
 
 #ifdef __cplusplus
 }
