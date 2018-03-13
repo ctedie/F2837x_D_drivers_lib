@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "DSP2834x_Device.h"
+#include "F2837xD_device.h"
 
 #include "drv_sci.h"
 
@@ -79,9 +79,13 @@ static bool setBaudRate(volatile struct SCI_REGS *pSci, drvSciSpeed_t speed)
     uint16_t brr_Value;
 
     //TODO Get CPU clock instead of 300000000
-    brr_Value = 300000000 / ((uint32_t)speed * 8 * (SysCtrlRegs.LOSPCP.bit.LSPCLK * 2));
-    pSci->SCIHBAUD = (brr_Value >> 8) & 0xFF;
-    pSci->SCILBAUD = (brr_Value & 0xFF);
+    brr_Value = 200000000 / ((uint32_t)speed * 8 * (ClkCfgRegs.LOSPCP.bit.LSPCLKDIV * 2));
+    pSci->SCIHBAUD.all = (brr_Value >> 8) & 0xFF;
+    pSci->SCILBAUD.all = (brr_Value & 0xFF);
+
+    //FIXME
+//    pSci->SCIHBAUD.all    =0x0000;  // 115200 baud @LSPCLK = 22.5MHz (90 MHz SYSCLK).
+//    pSci->SCILBAUD.all    =53;
 
     return true;
 }
@@ -107,8 +111,12 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
         return DRV_SCI_BAD_CONFIG;
     }
 
+//    pHandle->sci->SCIFFTX.all=0xE040;
+//    pHandle->sci->SCIFFRX.all=0x204f;
+//    pHandle->sci->SCIFFCT.all=0x0;
+//
+
     pHandle->sci->SCICCR.all = 0;
-    pHandle->sci->SCICTL1.bit.SWRESET = 0;  //Set in reset state
 
     pHandle->cbReception = pConfig->cbReception;
     pHandle->pReceptionData = pConfig->pReceptionData;
@@ -119,6 +127,8 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
 
     /* Data size config */
     pHandle->sci->SCICCR.bit.SCICHAR = pConfig->dataSize;
+
+    pHandle->sci->SCICTL1.bit.SWRESET = 0;  //Set in reset state
 
     /* Parity Config */
     if (pConfig->parity != DRV_SCI_PARITY_NONE)
@@ -137,6 +147,10 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
 //    pHandle->sci->SCICTL2.bit.RXBKINTENA;
     pHandle->sci->SCICTL1.bit.TXENA = 1;
 
+    pHandle->sci->SCICTL2.bit.TXINTENA = 1;
+    pHandle->sci->SCICTL2.bit.RXBKINTENA = 1;
+
+
     pHandle->sci->SCICTL1.bit.SWRESET = 1; //Release from reset state
     pHandle->initOk = true;
     return ret;
@@ -151,7 +165,8 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
  **********************************************************/
 drvSciReturn_t DRV_SCI_WriteChar(drvSciNumber_t uartNb, uint16_t car)
 {
-    m_UARTList[uartNb].sci->SCITXBUF = car;
+    while(!m_UARTList[uartNb].sci->SCICTL2.bit.TXRDY);
+    m_UARTList[uartNb].sci->SCITXBUF.all = car;
 
     return DRV_SCI_SUCCESS;
 }
@@ -165,8 +180,17 @@ drvSciReturn_t DRV_SCI_WriteChar(drvSciNumber_t uartNb, uint16_t car)
  **********************************************************/
 drvSciReturn_t DRV_SCI_ReadChar(drvSciNumber_t uartNb, uint16_t* pCar)
 {
-    *pCar = m_UARTList[uartNb].sci->SCIRXBUF.bit.RXDT;
-    return DRV_SCI_SUCCESS;
+    drvSciReturn_t ret = DRV_SCI_NO_INPUT_CHAR;
+    uint16_t dataNb = 1;
+    uint16_t readCount = 0;
+    while((readCount < dataNb) && m_UARTList[uartNb].sci->SCIRXST.bit.RXRDY)
+    {
+        *pCar = m_UARTList[uartNb].sci->SCIRXBUF.bit.SAR;
+        readCount++;
+        ret = DRV_SCI_SUCCESS;
+    }
+
+    return ret;
 }
 
 /** \} */

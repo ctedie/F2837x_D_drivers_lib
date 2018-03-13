@@ -40,7 +40,8 @@ typedef enum
     DRV_SCI_BAD_CONFIG,     /**!< SERIAL_LINK_BAD_CONFIG  */
     DRV_SCI_NOT_INIT,       /**!< SERIAL_LINK_NOT_INIT    */
     DRV_SCI_TX_ERROR,       /**!< SERIAL_LINK_TX_ERROR    */
-    DRV_SCI_BAD_ID          /**!< SERIAL_LINK_BAD_ID      */
+    DRV_SCI_BAD_ID,          /**!< SERIAL_LINK_BAD_ID      */
+    DRV_SCI_NO_INPUT_CHAR
 }drvSciReturn_t;
 
 /** The SCI number enum */
