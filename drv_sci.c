@@ -40,7 +40,9 @@ typedef struct
 
 
     bool initOk;
-
+    bool isBusy;
+    uint32_t _RX_ERRORS;
+    uint32_t _TX_ERRORS;
 }UARTHandle_t;
 
 /* Public variables ------------------------------------------------------------------------------------------------*/
@@ -50,21 +52,27 @@ UARTHandle_t m_UARTList[NB_SERIAL] =
 {
      {
           .sci = &SciaRegs,
-          .initOk = false
+          .initOk = false,
+          .isBusy = false
      },
      {
           .sci = &ScibRegs,
-          .initOk = false
+          .initOk = false,
+          .isBusy = false
      },
      {
           .sci = &ScicRegs,
-          .initOk = false
+          .initOk = false,
+          .isBusy = false
      }
 };
 
 /* Private functions prototypes ------------------------------------------------------------------------------------*/
 static bool setBaudRate(volatile struct SCI_REGS *pSci, drvSciSpeed_t speed);
-
+static void sciGeneralRxIsr(drvSciNumber_t uartNb);
+static void sciGeneralTxIsr(drvSciNumber_t uartNb);
+interrupt void sciaRxIsr(void);
+interrupt void sciaTxIsr(void);
 /* Private functions -----------------------------------------------------------------------------------------------*/
 
 /***********************************************************
@@ -78,19 +86,136 @@ static bool setBaudRate(volatile struct SCI_REGS *pSci, drvSciSpeed_t speed)
 {
     uint16_t brr_Value;
 
-    //TODO Get CPU clock instead of 300000000
+    //TODO Get CPU clock instead of 200000000
     brr_Value = 200000000 / ((uint32_t)speed * 8 * (ClkCfgRegs.LOSPCP.bit.LSPCLKDIV * 2));
     pSci->SCIHBAUD.all = (brr_Value >> 8) & 0xFF;
     pSci->SCILBAUD.all = (brr_Value & 0xFF);
 
-    //FIXME
-//    pSci->SCIHBAUD.all    =0x0000;  // 115200 baud @LSPCLK = 22.5MHz (90 MHz SYSCLK).
-//    pSci->SCILBAUD.all    =53;
-
     return true;
 }
 
+/***********************************************************
+ * \brief
+ *
+ * \param
+ *
+ * \return
+ **********************************************************/
+interrupt void sciaRxIsr(void)
+{
+    sciGeneralRxIsr(SCI_A);
+}
+
+/***********************************************************
+ * \brief
+ *
+ * \param
+ *
+ * \return
+ **********************************************************/
+interrupt void sciaTxIsr(void)
+{
+    sciGeneralTxIsr(SCI_A);
+}
+
+/***********************************************************
+ * \brief
+ *
+ * \param
+ *
+ * \return
+ **********************************************************/
+static void sciGeneralRxIsr(drvSciNumber_t uartNb)
+{
+    UARTHandle_t *pHandle = &m_UARTList[uartNb];
+    uint16_t car;
+
+    if(pHandle->cbReception != NULL)
+    {
+        if(pHandle->sci->SCIFFRX.bit.RXFFST)
+        {
+            car = pHandle->sci->SCIRXBUF.bit.SAR;
+            pHandle->cbReception(pHandle->pReceptionData, car);
+        }
+        else
+        {
+            pHandle->_RX_ERRORS++;
+        }
+    }
+
+    pHandle->sci->SCIFFRX.bit.RXFFOVRCLR=1;   // Clear Overflow flag
+    pHandle->sci->SCIFFRX.bit.RXFFINTCLR=1;   // Clear Interrupt flag
+
+    PieCtrlRegs.PIEACK.all|=0x100;       // Issue PIE ACK
+}
+
+/***********************************************************
+ * \brief
+ *
+ * \param
+ *
+ * \return
+ **********************************************************/
+static void sciGeneralTxIsr(drvSciNumber_t uartNb)
+{
+    UARTHandle_t *pHandle = &m_UARTList[uartNb];
+    uint16_t car;
+
+    if(pHandle->cbTransmission != NULL)
+    {
+        while(pHandle->sci->SCIFFTX.bit.TXFFST < 15)
+        {
+            //Send the first characters
+            if(pHandle->cbTransmission(pHandle->pTransmitionData, &car))
+            {
+                    pHandle->sci->SCITXBUF.all = car;
+            }
+            else
+            {
+                //No more character to send
+                pHandle->isBusy = false;
+                pHandle->sci->SCIFFTX.bit.TXFFIENA = 0;
+                break;
+            }
+        }
+
+    }
+
+    pHandle->sci->SCIFFTX.bit.TXFFINTCLR=1;   // Clear SCI Interrupt flag
+
+    PieCtrlRegs.PIEACK.all|=0x100;       // Issue PIE ACK
+}
+
 /* Public functions ------------------------------------------------------------------------------------------------*/
+
+/**********************************************************
+ * \brief The driver function to start the transmission process
+ *
+ * \param [in]  uartNb
+ *
+ * \return
+ *********************************************************/
+drvSciReturn_t DRV_SCI_StartTx(drvSciNumber_t uartNb)
+{
+    UARTHandle_t *pHandle = &m_UARTList[uartNb];
+    uint16_t car;
+
+    if(pHandle->isBusy)
+    {
+        return DRV_SCI_TX_BUSY;
+    }
+
+    if(pHandle->cbTransmission(pHandle->pTransmitionData, &car))
+    {
+        pHandle->sci->SCITXBUF.bit.TXDT = car;
+        pHandle->sci->SCIFFTX.bit.TXFFIENA = 1;
+        //TODO Send first character
+        return DRV_SCI_SUCCESS;
+    }
+
+
+    return DRV_SCI_TX_ERROR;
+}
 
 /**********************************************************
  * \brief The driver initialization function
@@ -115,6 +240,19 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
 //    pHandle->sci->SCIFFRX.all=0x204f;
 //    pHandle->sci->SCIFFCT.all=0x0;
 //
+
+    switch (uartNb)
+    {
+        case SCI_A:
+            EALLOW;  // This is needed to write to EALLOW protected registers
+            PieVectTable.SCIA_RX_INT = &sciaRxIsr;
+            PieVectTable.SCIA_TX_INT = &sciaTxIsr;
+            EDIS;    // This is needed to disable write to EALLOW protected registers
+            break;
+        default:
+            break;
+    }
+
 
     pHandle->sci->SCICCR.all = 0;
 
@@ -150,8 +288,14 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
     pHandle->sci->SCICTL2.bit.TXINTENA = 1;
     pHandle->sci->SCICTL2.bit.RXBKINTENA = 1;
 
+    pHandle->sci->SCIFFTX.all = 0xC01F;
+    pHandle->sci->SCIFFRX.all = 0x0021;
+    pHandle->sci->SCIFFCT.all = 0x00;
 
     pHandle->sci->SCICTL1.bit.SWRESET = 1; //Release from reset state
+    pHandle->sci->SCIFFTX.bit.TXFIFORESET = 1;
+    pHandle->sci->SCIFFRX.bit.RXFIFORESET = 1;
+
     pHandle->initOk = true;
     return ret;
 }
