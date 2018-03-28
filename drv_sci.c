@@ -4,7 +4,7 @@
  *  \addtogroup	DRIVERS
  *  \{
  ********************************************************************************************************************/
-/****************************************************** COMECA *******************************************************
+/*********************************************************************************************************************
  *  \file		drv_sci.c
  *  
  *  \brief		The SCI driver source file
@@ -73,6 +73,10 @@ static void sciGeneralRxIsr(drvSciNumber_t uartNb);
 static void sciGeneralTxIsr(drvSciNumber_t uartNb);
 interrupt void sciaRxIsr(void);
 interrupt void sciaTxIsr(void);
+interrupt void scibRxIsr(void);
+interrupt void scibTxIsr(void);
+interrupt void scicRxIsr(void);
+interrupt void scicTxIsr(void);
 /* Private functions -----------------------------------------------------------------------------------------------*/
 
 /***********************************************************
@@ -116,6 +120,54 @@ interrupt void sciaRxIsr(void)
 interrupt void sciaTxIsr(void)
 {
     sciGeneralTxIsr(SCI_A);
+}
+
+/***********************************************************
+ * \brief
+ *
+ * \param
+ *
+ * \return
+ **********************************************************/
+interrupt void scibRxIsr(void)
+{
+    sciGeneralRxIsr(SCI_B);
+}
+
+/***********************************************************
+ * \brief
+ *
+ * \param
+ *
+ * \return
+ **********************************************************/
+interrupt void scibTxIsr(void)
+{
+    sciGeneralTxIsr(SCI_B);
+}
+
+/***********************************************************
+ * \brief
+ *
+ * \param
+ *
+ * \return
+ **********************************************************/
+interrupt void scicRxIsr(void)
+{
+    sciGeneralRxIsr(SCI_C);
+}
+
+/***********************************************************
+ * \brief
+ *
+ * \param
+ *
+ * \return
+ **********************************************************/
+interrupt void scicTxIsr(void)
+{
+    sciGeneralTxIsr(SCI_C);
 }
 
 /***********************************************************
@@ -218,6 +270,97 @@ drvSciReturn_t DRV_SCI_StartTx(drvSciNumber_t uartNb)
 }
 
 /**********************************************************
+ * \brief The driver basic initialization function
+ *        Only basics interrupt handler have to be provided
+ * \warning GPIO pins must be configured before
+ *
+ * \param [in]  uartNb
+ * \param [in]  pConfig
+ *
+ * \return
+ *********************************************************/
+drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
+                                 uint32_t baudrate,
+                                 uint16_t databits,
+                                 drvSciParity_t parity,
+                                 drvSciStopBit_t stopBit,
+                                 drvSciRxIsr_t cbRxIsr,
+                                 drvSciTxIsr_t cbTxIsr)
+{
+    drvSciReturn_t ret = DRV_SCI_SUCCESS;
+    UARTHandle_t* pHandle = &m_UARTList[uartNb];
+
+    if(pHandle->initOk)
+    {
+        return DRV_SCI_ALREADY_INIT;
+    }
+
+
+    switch (uartNb)
+    {
+        case SCI_A:
+            EALLOW;  // This is needed to write to EALLOW protected registers
+            PieVectTable.SCIA_RX_INT = cbRxIsr;
+            PieVectTable.SCIA_TX_INT = cbTxIsr;
+            EDIS;    // This is needed to disable write to EALLOW protected registers
+            break;
+        case SCI_B:
+            EALLOW;  // This is needed to write to EALLOW protected registers
+            PieVectTable.SCIB_RX_INT = cbRxIsr;
+            PieVectTable.SCIB_TX_INT = cbTxIsr;
+            EDIS;    // This is needed to disable write to EALLOW protected registers
+            break;
+        case SCI_C:
+            EALLOW;  // This is needed to write to EALLOW protected registers
+            PieVectTable.SCIC_RX_INT = cbRxIsr;
+            PieVectTable.SCIC_TX_INT = cbTxIsr;
+            EDIS;    // This is needed to disable write to EALLOW protected registers
+            break;
+        default:
+            break;
+    }
+
+    pHandle->sci->SCICCR.all = 0;
+
+    /* Data size config */
+    pHandle->sci->SCICCR.bit.SCICHAR = databits;
+
+    pHandle->sci->SCICTL1.bit.SWRESET = 0;  //Set in reset state
+
+    /* Parity Config */
+    if (parity != DRV_SCI_PARITY_NONE)
+    {
+        pHandle->sci->SCICCR.bit.PARITYENA = 1;
+        pHandle->sci->SCICCR.bit.PARITY = parity - 1;
+    }
+
+    /* Stop bit config */
+    pHandle->sci->SCICCR.bit.STOPBITS = stopBit;
+
+    /* Baud Rate config */
+    setBaudRate(pHandle->sci, (drvSciSpeed_t)baudrate);
+
+    pHandle->sci->SCICTL1.bit.RXENA = 1;
+//    pHandle->sci->SCICTL2.bit.RXBKINTENA;
+    pHandle->sci->SCICTL1.bit.TXENA = 1;
+
+    pHandle->sci->SCICTL2.bit.TXINTENA = 1;
+    pHandle->sci->SCICTL2.bit.RXBKINTENA = 1;
+
+    pHandle->sci->SCIFFTX.all = 0xC000;
+    pHandle->sci->SCIFFRX.all = 0x0021;
+    pHandle->sci->SCIFFCT.all = 0x00;
+
+    pHandle->sci->SCICTL1.bit.SWRESET = 1; //Release from reset state
+    pHandle->sci->SCIFFTX.bit.TXFIFORESET = 1;
+    pHandle->sci->SCIFFRX.bit.RXFIFORESET = 1;
+
+    pHandle->initOk = true;
+    return ret;
+
+}
+
+/**********************************************************
  * \brief The driver initialization function
  * \warning GPIO pins must be configured before
  *
@@ -230,6 +373,13 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
 {
     drvSciReturn_t ret = DRV_SCI_SUCCESS;
     UARTHandle_t* pHandle = &m_UARTList[uartNb];
+
+    if(pHandle->initOk)
+    {
+        return DRV_SCI_ALREADY_INIT;
+    }
+
+
     if(pConfig == NULL)
     {
         //Error
@@ -247,6 +397,18 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCIA_RX_INT = &sciaRxIsr;
             PieVectTable.SCIA_TX_INT = &sciaTxIsr;
+            EDIS;    // This is needed to disable write to EALLOW protected registers
+            break;
+        case SCI_B:
+            EALLOW;  // This is needed to write to EALLOW protected registers
+            PieVectTable.SCIB_RX_INT = &scibRxIsr;
+            PieVectTable.SCIB_TX_INT = &scibTxIsr;
+            EDIS;    // This is needed to disable write to EALLOW protected registers
+            break;
+        case SCI_C:
+            EALLOW;  // This is needed to write to EALLOW protected registers
+            PieVectTable.SCIC_RX_INT = &scicRxIsr;
+            PieVectTable.SCIC_TX_INT = &scicTxIsr;
             EDIS;    // This is needed to disable write to EALLOW protected registers
             break;
         default:

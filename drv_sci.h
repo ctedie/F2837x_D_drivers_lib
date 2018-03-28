@@ -32,6 +32,8 @@ typedef void (*drvSciReceiveCallback_t)(void *pData, uint16_t car);
 typedef bool (*drvSciTransmitCallback_t)(void *pData, uint16_t *car);
 typedef void (*drvSciEndOfTransmitionCallback_t)(void *pData);
 
+typedef void (*drvSciRxIsr_t)(void);
+typedef void (*drvSciTxIsr_t)(void);
 /** The specific return type enum */
 typedef enum
 {
@@ -42,7 +44,8 @@ typedef enum
     DRV_SCI_TX_ERROR,       /**!< SERIAL_LINK_TX_ERROR    */
     DRV_SCI_BAD_ID,          /**!< SERIAL_LINK_BAD_ID      */
     DRV_SCI_NO_INPUT_CHAR,
-    DRV_SCI_TX_BUSY
+    DRV_SCI_TX_BUSY,
+    DRV_SCI_ALREADY_INIT
 }drvSciReturn_t;
 
 /** The SCI number enum */
@@ -62,7 +65,8 @@ typedef enum
     DRV_SCI_B19200 = 19200,
     DRV_SCI_B57600 = 57600,
     DRV_SCI_B115200 = 115200,
-    DRV_SCI_B460800 = 460800
+    DRV_SCI_B460800 = 460800,
+    DRV_SCI_B921600 = 921600
 }drvSciSpeed_t;
 
 /** The SCI data size enum */
@@ -114,6 +118,7 @@ typedef struct
 /* Public functions ------------------------------------------------------------------------------------------------*/
 
 drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig);
+drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb, uint32_t baudrate, uint16_t databits, drvSciParity_t parity, drvSciStopBit_t stopBit, drvSciRxIsr_t cbRxIsr, drvSciTxIsr_t cbTxIsr);
 drvSciReturn_t DRV_SCI_WriteChar_NonBlocking(drvSciNumber_t uartNb, uint16_t car);
 drvSciReturn_t DRV_SCI_ReadChar_NonBlocking(drvSciNumber_t uartNb, uint16_t* pCar);
 drvSciReturn_t DRV_SCI_StartTx(drvSciNumber_t uartNb);
