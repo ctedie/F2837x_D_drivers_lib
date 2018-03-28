@@ -5,7 +5,7 @@
  *  \{
  ********************************************************************************************************************/
 /*********************************************************************************************************************
- *  \file       drv_spi
+ *  \file       drv_spi.c
  *
  *  \brief      The SPI driver source file
  *
@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "DSP2834x_Spi.h"
+#include "F2837xD_device.h"
 
 #include "drv_spi.h"
 
@@ -44,7 +44,7 @@ SPI_Handle_t m_spiHandle[NB_SPI] =
 		.isInit = false
 	},
 //FIXME with family
-#ifdef DSP28_28346
+#ifdef F28_2837xD
 	{
 		.spiReg = &SpibRegs,
 		.isInit = false
@@ -52,12 +52,8 @@ SPI_Handle_t m_spiHandle[NB_SPI] =
 	{
 		.spiReg = &SpicRegs,
 		.isInit = false
-	},
-#endif
-	{
-		.spiReg = &SpidRegs,
-		.isInit = false
 	}
+#endif
 };
 /* Private functions prototypes ------------------------------------------------------------------------------------*/
 /* Private functions -----------------------------------------------------------------------------------------------*/

@@ -48,7 +48,7 @@ typedef struct
 /* Public variables ------------------------------------------------------------------------------------------------*/
 /* Private variables -----------------------------------------------------------------------------------------------*/
 
-UARTHandle_t m_UARTList[NB_SERIAL] =
+static UARTHandle_t m_UARTList[NB_SERIAL] =
 {
      {
           .sci = &SciaRegs,
@@ -317,6 +317,7 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
             EDIS;    // This is needed to disable write to EALLOW protected registers
             break;
         default:
+            return DRV_SCI_BAD_CONFIG;
             break;
     }
 
