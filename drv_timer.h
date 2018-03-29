@@ -1,13 +1,13 @@
 /****************************************************** COMECA *******************************************************
  *  \author		tedie.cedric
  *  \date		28 mars 2018
- *  \addtogroup	TODO
+ *  \addtogroup	DRV_TIMER
  *  \{
  ********************************************************************************************************************/
 /*********************************************************************************************************************
  *  \file		drv_timer.h
  *  
- *  \brief		TODO
+ *  \brief		The timer driver header file
  *
  *  \details	
  *
@@ -52,6 +52,13 @@ typedef struct
 
 /* Public variables ------------------------------------------------------------------------------------------------*/
 /* Public functions ------------------------------------------------------------------------------------------------*/
+
+drvTimerReturn_t DRV_TIMER_Init(drvTimerNumber_t timNb, float period_us, bool autoreload, drvTimerIsrCallback_t cbTimerEnd, void* pCallbackData);
+drvTimerReturn_t DRV_TIMER_Start(drvTimerNumber_t timNb);
+drvTimerReturn_t DRV_TIMER_Stop(drvTimerNumber_t timNb);
+drvTimerReturn_t DRV_TIMER_SetPeriod(drvTimerNumber_t timNb, float period);
+drvTimerReturn_t DRV_TIMER_Reload(drvTimerNumber_t timNb);
+inline uint32_t DRV_TIMER_GetCounter(drvTimerNumber_t timNb);
 
 #endif /* DRV_TIMER_H_ */
 

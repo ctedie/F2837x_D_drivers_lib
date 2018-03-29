@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "F2837xD_device.h"
+#include "F28x_Project.h"
 
 #include "drv_sci.h"
 
@@ -318,7 +318,6 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
             break;
         default:
             return DRV_SCI_BAD_CONFIG;
-            break;
     }
 
     pHandle->sci->SCICCR.all = 0;
