@@ -71,18 +71,20 @@ static UARTHandle_t m_UARTList[NB_SERIAL] =
 static bool setBaudRate(volatile struct SCI_REGS *pSci, drvSciSpeed_t speed);
 static void sciGeneralRxIsr(drvSciNumber_t uartNb);
 static void sciGeneralTxIsr(drvSciNumber_t uartNb);
-interrupt void sciaRxIsr(void);
-interrupt void sciaTxIsr(void);
-interrupt void scibRxIsr(void);
-interrupt void scibTxIsr(void);
-interrupt void scicRxIsr(void);
-interrupt void scicTxIsr(void);
+static void sciaRxIsr(void);
+static void sciaTxIsr(void);
+static void scibRxIsr(void);
+static void scibTxIsr(void);
+static void scicRxIsr(void);
+static void scicTxIsr(void);
+
 /* Private functions -----------------------------------------------------------------------------------------------*/
 
 /***********************************************************
- * \brief
+ * \brief Set the baudrate with the choosen parameters
  *
- * \param
+ * \param [in]  pSci    A pointer to sci register
+ * \param [in]  speed   One of the baudrate value of drvSciSpeed_t
  *
  * \return
  **********************************************************/
@@ -99,35 +101,23 @@ static bool setBaudRate(volatile struct SCI_REGS *pSci, drvSciSpeed_t speed)
 }
 
 /***********************************************************
- * \brief
- *
- * \param
- *
- * \return
+ * \brief   Default Interrupt handler for SCIA RX
  **********************************************************/
-interrupt void sciaRxIsr(void)
+static __interrupt void sciaRxIsr(void)
 {
     sciGeneralRxIsr(SCI_A);
 }
 
 /***********************************************************
- * \brief
- *
- * \param
- *
- * \return
+ * \brief   Default Interrupt handler for SCIA TX
  **********************************************************/
-interrupt void sciaTxIsr(void)
+static __interrupt void sciaTxIsr(void)
 {
     sciGeneralTxIsr(SCI_A);
 }
 
 /***********************************************************
- * \brief
- *
- * \param
- *
- * \return
+ * \brief   Default Interrupt handler for SCIB RX
  **********************************************************/
 interrupt void scibRxIsr(void)
 {
@@ -135,11 +125,7 @@ interrupt void scibRxIsr(void)
 }
 
 /***********************************************************
- * \brief
- *
- * \param
- *
- * \return
+ * \brief   Default Interrupt handler for SCIB TX
  **********************************************************/
 interrupt void scibTxIsr(void)
 {
@@ -147,11 +133,7 @@ interrupt void scibTxIsr(void)
 }
 
 /***********************************************************
- * \brief
- *
- * \param
- *
- * \return
+ * \brief   Default Interrupt handler for SCIC RX
  **********************************************************/
 interrupt void scicRxIsr(void)
 {
@@ -159,11 +141,7 @@ interrupt void scicRxIsr(void)
 }
 
 /***********************************************************
- * \brief
- *
- * \param
- *
- * \return
+ * \brief   Default Interrupt handler for SCIC RX
  **********************************************************/
 interrupt void scicTxIsr(void)
 {
@@ -171,11 +149,11 @@ interrupt void scicTxIsr(void)
 }
 
 /***********************************************************
- * \brief
+ * \brief The genreral interrupt handler.
+ *        Each default handler call this function with
+ *        their own SCI Number
  *
- * \param
- *
- * \return
+ * \param [in]    uartNb  The SCI number
  **********************************************************/
 static void sciGeneralRxIsr(drvSciNumber_t uartNb)
 {
@@ -204,7 +182,7 @@ static void sciGeneralRxIsr(drvSciNumber_t uartNb)
 /***********************************************************
  * \brief
  *
- * \param
+ * \param [in]    uartNb  The SCI number
  *
  * \return
  **********************************************************/
@@ -243,7 +221,7 @@ static void sciGeneralTxIsr(drvSciNumber_t uartNb)
 /**********************************************************
  * \brief The driver function to start the transmission process
  *
- * \param [in]  uartNb
+ * \param [in]    uartNb  The SCI number
  *
  * \return
  *********************************************************/
@@ -320,7 +298,7 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
             return DRV_SCI_BAD_CONFIG;
     }
 
-    pHandle->sci->SCICCR.all = 0;
+//    pHandle->sci->SCICCR.all = 0;
 
     /* Data size config */
     pHandle->sci->SCICCR.bit.SCICHAR = databits;
@@ -347,8 +325,8 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
     pHandle->sci->SCICTL2.bit.TXINTENA = 1;
     pHandle->sci->SCICTL2.bit.RXBKINTENA = 1;
 
-    pHandle->sci->SCIFFTX.all = 0xC000;
-    pHandle->sci->SCIFFRX.all = 0x0021;
+    pHandle->sci->SCIFFTX.all = 0xC000; //Disable Fifo Tx Interrupts
+    pHandle->sci->SCIFFRX.all = 0x0021; //Enable Fifo Rx Interrupts
     pHandle->sci->SCIFFCT.all = 0x00;
 
     pHandle->sci->SCICTL1.bit.SWRESET = 1; //Release from reset state
@@ -444,11 +422,10 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
     setBaudRate(pHandle->sci, pConfig->baudrate);
 
     pHandle->sci->SCICTL1.bit.RXENA = 1;
-//    pHandle->sci->SCICTL2.bit.RXBKINTENA;
     pHandle->sci->SCICTL1.bit.TXENA = 1;
 
-    pHandle->sci->SCICTL2.bit.TXINTENA = 1;
-    pHandle->sci->SCICTL2.bit.RXBKINTENA = 1;
+    pHandle->sci->SCICTL2.bit.TXINTENA = 0;
+    pHandle->sci->SCICTL2.bit.RXBKINTENA = 0;
 
     pHandle->sci->SCIFFTX.all = 0xC01F;
     pHandle->sci->SCIFFRX.all = 0x0021;
@@ -493,13 +470,77 @@ drvSciReturn_t DRV_SCI_ReadChar_NonBlocking(drvSciNumber_t uartNb, uint16_t* pCa
 {
     drvSciReturn_t ret = DRV_SCI_NO_INPUT_CHAR;
 
-    if(m_UARTList[uartNb].sci->SCIRXST.bit.RXRDY)
+    if(m_UARTList[uartNb].sci->SCIFFRX.bit.RXFFST > 0)
     {
         *pCar = m_UARTList[uartNb].sci->SCIRXBUF.bit.SAR;
         ret = DRV_SCI_SUCCESS;
     }
 
     return ret;
+}
+
+/***********************************************************
+ * \brief
+ *
+ * \param
+ **********************************************************/
+void DRV_SCI_EnableRx(drvSciNumber_t uartNb, bool enable)
+{
+    m_UARTList[uartNb].sci->SCICTL1.bit.RXENA = enable;
+}
+
+/***********************************************************
+ * \brief
+ *
+ * \param
+ **********************************************************/
+void DRV_SCI_EnableTx(drvSciNumber_t uartNb, bool enable)
+{
+    m_UARTList[uartNb].sci->SCICTL1.bit.TXENA = enable;
+}
+
+/***********************************************************
+ * \brief
+ *
+ * \param
+ **********************************************************/
+void DRV_SCI_Enable_RxINT(drvSciNumber_t uartNb, bool enable)
+{
+    m_UARTList[uartNb].sci->SCIFFRX.bit.RXFFIENA = enable;
+}
+
+/***********************************************************
+ * \brief
+ *
+ * \param
+ **********************************************************/
+void DRV_SCI_Enable_TxINT(drvSciNumber_t uartNb, bool enable)
+{
+    m_UARTList[uartNb].sci->SCIFFTX.bit.TXFFIENA = enable;
+}
+
+/***********************************************************
+ * \brief
+ *
+ * \param
+ **********************************************************/
+void DRV_SCI_ClearIT_Rx(drvSciNumber_t uartNb)
+{
+    m_UARTList[uartNb].sci->SCIFFRX.bit.RXFFOVRCLR=1;   // Clear Overflow flag
+    m_UARTList[uartNb].sci->SCIFFRX.bit.RXFFINTCLR=1;   // Clear Interrupt flag
+    PieCtrlRegs.PIEACK.all|=0x100;
+}
+
+/***********************************************************
+ * \brief
+ *
+ * \param
+ **********************************************************/
+void DRV_SCI_ClearIT_Tx(drvSciNumber_t uartNb)
+{
+    m_UARTList[uartNb].sci->SCIFFTX.bit.TXFFINTCLR=1;
+    PieCtrlRegs.PIEACK.all|=0x100;
+
 }
 
 /** \} */

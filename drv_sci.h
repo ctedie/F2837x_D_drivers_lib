@@ -122,6 +122,12 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb, uint32_t baudrate, uint1
 drvSciReturn_t DRV_SCI_WriteChar_NonBlocking(drvSciNumber_t uartNb, uint16_t car);
 drvSciReturn_t DRV_SCI_ReadChar_NonBlocking(drvSciNumber_t uartNb, uint16_t* pCar);
 drvSciReturn_t DRV_SCI_StartTx(drvSciNumber_t uartNb);
+void DRV_SCI_EnableRx(drvSciNumber_t uartNb, bool enable);
+void DRV_SCI_EnableTx(drvSciNumber_t uartNb, bool enable);
+void DRV_SCI_Enable_RxINT(drvSciNumber_t uartNb, bool enable);
+void DRV_SCI_Enable_TxINT(drvSciNumber_t uartNb, bool enable);
+void DRV_SCI_ClearIT_Rx(drvSciNumber_t uartNb);
+void DRV_SCI_ClearIT_Tx(drvSciNumber_t uartNb);
 
 #ifdef __cplusplus
 }
