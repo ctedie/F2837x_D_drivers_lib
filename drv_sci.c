@@ -1,10 +1,15 @@
-/****************************************************** COMECA *******************************************************
+/*********************************************************************************************************************
+ *                                                      COMECA
+ ********************************************************************************************************************/
+/**
+ ********************************************************************************************************************
  *  \author		tedie.cedric
  *  \date		9 mars 2018
  *  \addtogroup	DRIVERS
  *  \{
  ********************************************************************************************************************/
-/*********************************************************************************************************************
+/**
+ ********************************************************************************************************************
  *  \file		drv_sci.c
  *  
  *  \brief		The SCI driver source file
@@ -47,7 +52,7 @@ typedef struct
 
 /* Public variables ------------------------------------------------------------------------------------------------*/
 /* Private variables -----------------------------------------------------------------------------------------------*/
-
+/** Th list of available uart handle */
 static UARTHandle_t m_UARTList[NB_SERIAL] =
 {
      {
@@ -80,7 +85,8 @@ static void scicTxIsr(void);
 
 /* Private functions -----------------------------------------------------------------------------------------------*/
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief Set the baudrate with the choosen parameters
  *
  * \param [in]  pSci    A pointer to sci register
@@ -100,7 +106,8 @@ static bool setBaudRate(volatile struct SCI_REGS *pSci, drvSciSpeed_t speed)
     return true;
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief   Default Interrupt handler for SCIA RX
  **********************************************************/
 static __interrupt void sciaRxIsr(void)
@@ -108,7 +115,8 @@ static __interrupt void sciaRxIsr(void)
     sciGeneralRxIsr(SCI_A);
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief   Default Interrupt handler for SCIA TX
  **********************************************************/
 static __interrupt void sciaTxIsr(void)
@@ -116,7 +124,8 @@ static __interrupt void sciaTxIsr(void)
     sciGeneralTxIsr(SCI_A);
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief   Default Interrupt handler for SCIB RX
  **********************************************************/
 interrupt void scibRxIsr(void)
@@ -124,7 +133,8 @@ interrupt void scibRxIsr(void)
     sciGeneralRxIsr(SCI_B);
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief   Default Interrupt handler for SCIB TX
  **********************************************************/
 interrupt void scibTxIsr(void)
@@ -132,7 +142,8 @@ interrupt void scibTxIsr(void)
     sciGeneralTxIsr(SCI_B);
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief   Default Interrupt handler for SCIC RX
  **********************************************************/
 interrupt void scicRxIsr(void)
@@ -140,7 +151,8 @@ interrupt void scicRxIsr(void)
     sciGeneralRxIsr(SCI_C);
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief   Default Interrupt handler for SCIC RX
  **********************************************************/
 interrupt void scicTxIsr(void)
@@ -148,7 +160,8 @@ interrupt void scicTxIsr(void)
     sciGeneralTxIsr(SCI_C);
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief The genreral interrupt handler.
  *        Each default handler call this function with
  *        their own SCI Number
@@ -179,8 +192,9 @@ static void sciGeneralRxIsr(drvSciNumber_t uartNb)
     PieCtrlRegs.PIEACK.all|=0x100;       // Issue PIE ACK
 }
 
-/***********************************************************
- * \brief
+/**
+ **********************************************************
+ * \brief   The global Tx interrupt function
  *
  * \param [in]    uartNb  The SCI number
  *
@@ -218,7 +232,8 @@ static void sciGeneralTxIsr(drvSciNumber_t uartNb)
 
 /* Public functions ------------------------------------------------------------------------------------------------*/
 
-/**********************************************************
+/**
+ *********************************************************
  * \brief The driver function to start the transmission process
  *
  * \param [in]    uartNb  The SCI number
@@ -247,15 +262,23 @@ drvSciReturn_t DRV_SCI_StartTx(drvSciNumber_t uartNb)
     return DRV_SCI_TX_ERROR;
 }
 
-/**********************************************************
+/**
+ *********************************************************
  * \brief The driver basic initialization function
  *        Only basics interrupt handler have to be provided
  * \warning GPIO pins must be configured before
  *
- * \param [in]  uartNb
- * \param [in]  pConfig
+ * \param [in]  uartNb      The UART number
+ * \param [in]  baudrate    The baudrate
+ * \param [in]  databits    The data bit size
+ * \param [in]  parity      The parity
+ * \param [in]  stopBit     The number of stop bit
+ * \param [in]  cbRxIsr     A pionter to a function called
+ *                          in case of received character interrupt
+ * \param [in]  cbTxIsr     A pionter to a function called
+ *                          in case of received character interrupt
  *
- * \return
+ * \return  One of \ref drvSciReturn_t values
  *********************************************************/
 drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
                                  uint32_t baudrate,
@@ -338,14 +361,16 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
 
 }
 
-/**********************************************************
+/**
+ *********************************************************
  * \brief The driver initialization function
  * \warning GPIO pins must be configured before
  *
- * \param [in]  uartNb
- * \param [in]  pConfig
+ * \param [in]  uartNb  The uart number
+ * \param [in]  pConfig A pointer to a \ref drvSciConfig_t
+ *                      structure initialized
  *
- * \return
+ * \return  One of \ref drvSciReturn_t values
  *********************************************************/
 drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
 {
@@ -439,7 +464,8 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
     return ret;
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief
  *
  * \param
@@ -459,7 +485,8 @@ drvSciReturn_t DRV_SCI_WriteChar_NonBlocking(drvSciNumber_t uartNb, uint16_t car
     return ret;
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief
  *
  * \param
@@ -479,7 +506,8 @@ drvSciReturn_t DRV_SCI_ReadChar_NonBlocking(drvSciNumber_t uartNb, uint16_t* pCa
     return ret;
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief
  *
  * \param
@@ -489,7 +517,8 @@ void DRV_SCI_EnableRx(drvSciNumber_t uartNb, bool enable)
     m_UARTList[uartNb].sci->SCICTL1.bit.RXENA = enable;
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief
  *
  * \param
@@ -499,7 +528,8 @@ void DRV_SCI_EnableTx(drvSciNumber_t uartNb, bool enable)
     m_UARTList[uartNb].sci->SCICTL1.bit.TXENA = enable;
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief
  *
  * \param
@@ -509,7 +539,8 @@ void DRV_SCI_Enable_RxINT(drvSciNumber_t uartNb, bool enable)
     m_UARTList[uartNb].sci->SCIFFRX.bit.RXFFIENA = enable;
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief
  *
  * \param
@@ -519,7 +550,8 @@ void DRV_SCI_Enable_TxINT(drvSciNumber_t uartNb, bool enable)
     m_UARTList[uartNb].sci->SCIFFTX.bit.TXFFIENA = enable;
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief
  *
  * \param
@@ -531,7 +563,8 @@ void DRV_SCI_ClearIT_Rx(drvSciNumber_t uartNb)
     PieCtrlRegs.PIEACK.all|=0x100;
 }
 
-/***********************************************************
+/**
+ **********************************************************
  * \brief
  *
  * \param

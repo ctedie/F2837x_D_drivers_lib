@@ -1,15 +1,20 @@
-/****************************************************** COMECA *******************************************************
+/*********************************************************************************************************************
+ *                                                      COMECA
+ ********************************************************************************************************************/
+/**
+ *********************************************************************************************************************
  *  \author		tedie.cedric
  *  \date		28 mars 2018
  *  \addtogroup	DRV_TIMER
  *  \{
  ********************************************************************************************************************/
-/*********************************************************************************************************************
+/**
+ ********************************************************************************************************************
  *  \file		drv_timer.c
- *  
+ *
  *  \brief		The timer driver source file
  *
- *  \details	
+ *  \details
  *
  ********************************************************************************************************************/
 
@@ -28,13 +33,13 @@
 /** The timer handle structure */
 typedef struct
 {
-    struct CPUTIMER_VARS *timer;        /**!< A pointer to the timer_var structure */
-    drvTimerIsrCallback_t cbTimerEnd;   /**!< The callback when timeout interrupt orccurs */
-    void* pData;                        /**!< Data passed to the callback */
+    struct CPUTIMER_VARS *timer;        /** A pointer to the timer_var structure */
+    drvTimerIsrCallback_t cbTimerEnd;   /** The callback when timeout interrupt orccurs */
+    void* pData;                        /** Data passed to the callback */
 
-    float timeoutVal_us;                /**!< The timeout period */
+    float timeoutVal_us;                /** The timeout period */
 
-    bool initOk;                        /**!< INTERNAL true if struct is initialized */
+    bool initOk;                        /** INTERNAL true if struct is initialized */
 
 }TIMERHandle_t;
 
@@ -62,8 +67,9 @@ __interrupt void timer1_isr(void);
 __interrupt void timer2_isr(void);
 
 /* Private functions -----------------------------------------------------------------------------------------------*/
-/**********************************************************
- * \brief
+/**
+ *********************************************************
+ * \brief   The timer 0 global interrupt function
  *********************************************************/
 __interrupt void timer0_isr(void)
 {
@@ -71,15 +77,17 @@ __interrupt void timer0_isr(void)
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 }
 
-/**********************************************************
- * \brief
+/**
+ *********************************************************
+ * \brief   The timer 1 global interrupt function
  *********************************************************/
 __interrupt void timer1_isr(void)
 {
     m_TIMERList[TIMER1].cbTimerEnd(m_TIMERList[TIMER1].pData);
 }
 
-/**********************************************************
+/**
+ *********************************************************
  * \brief   The timer 2 global interrupt function
  *********************************************************/
 __interrupt void timer2_isr(void)
@@ -89,8 +97,9 @@ __interrupt void timer2_isr(void)
 
 /* Public functions ------------------------------------------------------------------------------------------------*/
 
-/**********************************************************
- * \brief 
+/**
+ *********************************************************
+ * \brief   Initialize the driver
  *
  * \param [in]  timNb           The timer number
  * \param [in]  period_us       The period in us
@@ -98,7 +107,7 @@ __interrupt void timer2_isr(void)
  * \param [in]  cbTimerEnd      The callback when the timeout interrupt occurs
  * \param [in]  pCallbackData   The data to pass to the callback
  *
- * \return  The status
+ * \return  One of \ref drvTimerReturn_t values
  *********************************************************/
 drvTimerReturn_t DRV_TIMER_Init(drvTimerNumber_t timNb, float period_us, bool autoreload, drvTimerIsrCallback_t cbTimerEnd, void* pCallbackData)
 {
@@ -160,7 +169,8 @@ drvTimerReturn_t DRV_TIMER_Init(drvTimerNumber_t timNb, float period_us, bool au
 
 }
 
-/**********************************************************
+/**
+ *********************************************************
  * \brief   Start the timer
  *
  * \param [in]  timNb   The timer number
@@ -174,7 +184,8 @@ drvTimerReturn_t DRV_TIMER_Start(drvTimerNumber_t timNb)
     return DRV_TIMER_SUCCESS;
 }
 
-/**********************************************************
+/**
+ *********************************************************
  * \brief   Stop the timer
  *
  * \param [in]  timNb   The timer number
@@ -188,7 +199,8 @@ drvTimerReturn_t DRV_TIMER_Stop(drvTimerNumber_t timNb)
     return DRV_TIMER_SUCCESS;
 }
 
-/**********************************************************
+/**
+ *********************************************************
  * \brief   Stop the timer then set a new timeout period
  *
  * \param [in]  timNb   The timer number
@@ -205,7 +217,8 @@ drvTimerReturn_t DRV_TIMER_SetPeriod(drvTimerNumber_t timNb, float period)
     return DRV_TIMER_SUCCESS;
 }
 
-/**********************************************************
+/**
+ *********************************************************
  * \brief   Reload the timer with the configured period value
  *
  * \param [in]  timNb   The timer number
@@ -219,7 +232,8 @@ drvTimerReturn_t DRV_TIMER_Reload(drvTimerNumber_t timNb)
     return DRV_TIMER_SUCCESS;
 }
 
-/**********************************************************
+/**
+ *********************************************************
  * \brief   Get the timer counter value
  *
  * \param [in]  timNb   The timer number
