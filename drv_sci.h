@@ -62,6 +62,7 @@ typedef enum
     SCI_A = 0,
     SCI_B,
     SCI_C,
+    SCI_D,
 
     NB_SERIAL
 }drvSciNumber_t;

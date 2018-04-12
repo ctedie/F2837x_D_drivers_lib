@@ -25,12 +25,31 @@
 
 #include "F28x_Project.h"
 
+#ifdef OS
+#include <ti/sysbios/family/c28/Hwi.h>
+#include <ti/sysbios/knl/Swi.h>
+#endif
+
+
+
+#include "hw_ints.h"
+#include "drv_utils.h"
 #include "drv_sci.h"
+
 
 /* Macro definition ------------------------------------------------------------------------------------------------*/
 /* Constant definition ---------------------------------------------------------------------------------------------*/
 /* Type definition  ------------------------------------------------------------------------------------------------*/
-
+#ifdef OS
+/** The local hwi paramters structure */
+typedef struct
+{
+    Hwi_Handle rxHwiHandle;
+    Hwi_Params rxHwiParams;
+    Hwi_Handle txHwiHandle;
+    Hwi_Params txHwiParams;
+}HwiParams_t;
+#endif
 /** The SCI Handle structure */
 typedef struct
 {
@@ -43,6 +62,7 @@ typedef struct
     drvSciEndOfTransmitionCallback_t cbEndOfTransmition;
     void* pEndOfTransmitionArg;
 
+    HwiParams_t hwiConf;
 
     bool initOk;
     bool isBusy;
@@ -52,6 +72,7 @@ typedef struct
 
 /* Public variables ------------------------------------------------------------------------------------------------*/
 /* Private variables -----------------------------------------------------------------------------------------------*/
+
 /** Th list of available uart handle */
 static UARTHandle_t m_UARTList[NB_SERIAL] =
 {
@@ -76,12 +97,17 @@ static UARTHandle_t m_UARTList[NB_SERIAL] =
 static bool setBaudRate(volatile struct SCI_REGS *pSci, drvSciSpeed_t speed);
 static void sciGeneralRxIsr(drvSciNumber_t uartNb);
 static void sciGeneralTxIsr(drvSciNumber_t uartNb);
+#ifdef OS
+#else
 static void sciaRxIsr(void);
 static void sciaTxIsr(void);
 static void scibRxIsr(void);
 static void scibTxIsr(void);
 static void scicRxIsr(void);
 static void scicTxIsr(void);
+static void scidRxIsr(void);
+static void scidTxIsr(void);
+#endif /* OS */
 
 /* Private functions -----------------------------------------------------------------------------------------------*/
 
@@ -106,6 +132,9 @@ static bool setBaudRate(volatile struct SCI_REGS *pSci, drvSciSpeed_t speed)
     return true;
 }
 
+#ifdef OS
+//TODO define HWI function that post a SWI (The swi are sciGeneralRxIsr & sciGeneralTxIsr)
+#else
 /**
  **********************************************************
  * \brief   Default Interrupt handler for SCIA RX
@@ -159,6 +188,26 @@ interrupt void scicTxIsr(void)
 {
     sciGeneralTxIsr(SCI_C);
 }
+
+/**
+ **********************************************************
+ * \brief   Default Interrupt handler for SCID RX
+ **********************************************************/
+interrupt void scidRxIsr(void)
+{
+    sciGeneralRxIsr(SCI_D);
+}
+
+/**
+ **********************************************************
+ * \brief   Default Interrupt handler for SCID RX
+ **********************************************************/
+interrupt void scidTxIsr(void)
+{
+    sciGeneralTxIsr(SCI_D);
+}
+
+#endif /* OS */
 
 /**
  **********************************************************
@@ -290,36 +339,74 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
 {
     drvSciReturn_t ret = DRV_SCI_SUCCESS;
     UARTHandle_t* pHandle = &m_UARTList[uartNb];
+    uint16_t rxIntVal, txIntVal;
 
     if(pHandle->initOk)
     {
         return DRV_SCI_ALREADY_INIT;
     }
 
-
     switch (uartNb)
     {
         case SCI_A:
+#ifdef OS
+            rxIntVal = EXTRACT_INT_NUMBER(INT_SCIRXINTA);
+            txIntVal = EXTRACT_INT_NUMBER(INT_SCIRXINTA);
+#else
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCIA_RX_INT = cbRxIsr;
             PieVectTable.SCIA_TX_INT = cbTxIsr;
             EDIS;    // This is needed to disable write to EALLOW protected registers
+#endif
             break;
         case SCI_B:
+#ifdef OS
+            rxIntVal = EXTRACT_INT_NUMBER(INT_SCIRXINTB);
+            txIntVal = EXTRACT_INT_NUMBER(INT_SCIRXINTB);
+#else
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCIB_RX_INT = cbRxIsr;
             PieVectTable.SCIB_TX_INT = cbTxIsr;
             EDIS;    // This is needed to disable write to EALLOW protected registers
+#endif
             break;
         case SCI_C:
+#ifdef OS
+            rxIntVal = EXTRACT_INT_NUMBER(INT_SCICRX);
+            txIntVal = EXTRACT_INT_NUMBER(INT_SCICTX);
+#else
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCIC_RX_INT = cbRxIsr;
             PieVectTable.SCIC_TX_INT = cbTxIsr;
             EDIS;    // This is needed to disable write to EALLOW protected registers
+#endif
+            break;
+        case SCI_D:
+#ifdef OS
+            rxIntVal = EXTRACT_INT_NUMBER(INT_SCIDRX);
+            txIntVal = EXTRACT_INT_NUMBER(INT_SCIDTX);
+#else
+            EALLOW;  // This is needed to write to EALLOW protected registers
+            PieVectTable.SCID_RX_INT = cbRxIsr;
+            PieVectTable.SCID_TX_INT = cbTxIsr;
+            EDIS;    // This is needed to disable write to EALLOW protected registers
+#endif
             break;
         default:
             return DRV_SCI_BAD_CONFIG;
     }
+
+#ifdef OS
+    pHandle->hwiConf.rxHwiParams.arg = NULL;
+    Hwi_Params_init(&pHandle->hwiConf.rxHwiParams);
+    pHandle->hwiConf.rxHwiHandle = Hwi_create(rxIntVal, (Hwi_FuncPtr)cbRxIsr, &pHandle->hwiConf.rxHwiParams, NULL);
+
+    pHandle->hwiConf.txHwiParams.arg = NULL;
+    Hwi_Params_init(&pHandle->hwiConf.txHwiParams);
+    pHandle->hwiConf.txHwiHandle = Hwi_create(txIntVal, (Hwi_FuncPtr)cbTxIsr, &pHandle->hwiConf.txHwiParams, NULL);
+#else
+
+#endif
 
 //    pHandle->sci->SCICCR.all = 0;
 
@@ -393,7 +480,9 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
 //    pHandle->sci->SCIFFRX.all=0x204f;
 //    pHandle->sci->SCIFFCT.all=0x0;
 //
-
+#ifdef OS
+#warning "Do not use DRV_SCI_Init function for now"
+#else
     switch (uartNb)
     {
         case SCI_A:
@@ -414,11 +503,17 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
             PieVectTable.SCIC_TX_INT = &scicTxIsr;
             EDIS;    // This is needed to disable write to EALLOW protected registers
             break;
+        case SCI_D:
+            EALLOW;  // This is needed to write to EALLOW protected registers
+            PieVectTable.SCID_RX_INT = &scidRxIsr;
+            PieVectTable.SCID_TX_INT = &scidTxIsr;
+            EDIS;    // This is needed to disable write to EALLOW protected registers
+            break;
         default:
             break;
     }
 
-
+#endif
     pHandle->sci->SCICCR.all = 0;
 
     pHandle->cbReception = pConfig->cbReception;
