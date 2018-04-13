@@ -5,7 +5,7 @@
  ********************************************************************************************************************
  *  \author		tedie.cedric
  *  \date		9 mars 2018
- *  \addtogroup	DRIVERS
+ *  \addtogroup	DRV_SCI
  *  \{
  ********************************************************************************************************************/
 /**
@@ -50,6 +50,7 @@ typedef struct
     Hwi_Params txHwiParams;
 }HwiParams_t;
 #endif
+
 /** The SCI Handle structure */
 typedef struct
 {
@@ -59,7 +60,7 @@ typedef struct
     void* pReceptionData;
     drvSciTransmitCallback_t cbTransmission;
     void* pTransmitionData;
-    drvSciEndOfTransmitionCallback_t cbEndOfTransmition;
+    drvSciEndOfTransmissionCallback_t cbEndOfTransmition;
     void* pEndOfTransmitionArg;
 
     HwiParams_t hwiConf;
@@ -351,7 +352,7 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
         case SCI_A:
 #ifdef OS
             rxIntVal = EXTRACT_INT_NUMBER(INT_SCIRXINTA);
-            txIntVal = EXTRACT_INT_NUMBER(INT_SCIRXINTA);
+            txIntVal = EXTRACT_INT_NUMBER(INT_SCITXINTA);
 #else
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCIA_RX_INT = cbRxIsr;
@@ -362,7 +363,7 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
         case SCI_B:
 #ifdef OS
             rxIntVal = EXTRACT_INT_NUMBER(INT_SCIRXINTB);
-            txIntVal = EXTRACT_INT_NUMBER(INT_SCIRXINTB);
+            txIntVal = EXTRACT_INT_NUMBER(INT_SCITXINTB);
 #else
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCIB_RX_INT = cbRxIsr;
@@ -411,7 +412,7 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
 //    pHandle->sci->SCICCR.all = 0;
 
     /* Data size config */
-    pHandle->sci->SCICCR.bit.SCICHAR = databits;
+    pHandle->sci->SCICCR.bit.SCICHAR = (databits - 1);
 
     pHandle->sci->SCICTL1.bit.SWRESET = 0;  //Set in reset state
 
@@ -561,11 +562,12 @@ drvSciReturn_t DRV_SCI_Init(drvSciNumber_t uartNb, drvSciConfig_t *pConfig)
 
 /**
  **********************************************************
- * \brief
+ * \brief   The non blocking function to write a char
  *
- * \param
+ * \param   [in]    uartNb  The uart number
+ * \param   [in]    car     The car to write
  *
- * \return
+ * \return  One of \ref drvSciReturn_t values
  **********************************************************/
 drvSciReturn_t DRV_SCI_WriteChar_NonBlocking(drvSciNumber_t uartNb, uint16_t car)
 {
@@ -582,11 +584,12 @@ drvSciReturn_t DRV_SCI_WriteChar_NonBlocking(drvSciNumber_t uartNb, uint16_t car
 
 /**
  **********************************************************
- * \brief
+ * \brief   The non blocking function to read a char
  *
- * \param
+ * \param   [in]    uartNb  The uart number
+ * \param   [out]   pCar     The read character
  *
- * \return
+ * \return  One of \ref drvSciReturn_t values
  **********************************************************/
 drvSciReturn_t DRV_SCI_ReadChar_NonBlocking(drvSciNumber_t uartNb, uint16_t* pCar)
 {
@@ -603,9 +606,10 @@ drvSciReturn_t DRV_SCI_ReadChar_NonBlocking(drvSciNumber_t uartNb, uint16_t* pCa
 
 /**
  **********************************************************
- * \brief
+ * \brief   Enable receive process on a SCI
  *
- * \param
+ * \param   [in]    uartNb  The uart number
+ * \param   [in]    enable  true to enable, false to disable
  **********************************************************/
 void DRV_SCI_EnableRx(drvSciNumber_t uartNb, bool enable)
 {
@@ -614,9 +618,10 @@ void DRV_SCI_EnableRx(drvSciNumber_t uartNb, bool enable)
 
 /**
  **********************************************************
- * \brief
+ * \brief   Enable transmit process on a SCI
  *
- * \param
+ * \param   [in]    uartNb  The uart number
+ * \param   [in]    enable  true to enable, false to disable
  **********************************************************/
 void DRV_SCI_EnableTx(drvSciNumber_t uartNb, bool enable)
 {
@@ -625,9 +630,10 @@ void DRV_SCI_EnableTx(drvSciNumber_t uartNb, bool enable)
 
 /**
  **********************************************************
- * \brief
+ * \brief   Enable receive interrupt on a SCI
  *
- * \param
+ * \param   [in]    uartNb  The uart number
+ * \param   [in]    enable  true to enable, false to disable
  **********************************************************/
 void DRV_SCI_Enable_RxINT(drvSciNumber_t uartNb, bool enable)
 {
@@ -636,9 +642,10 @@ void DRV_SCI_Enable_RxINT(drvSciNumber_t uartNb, bool enable)
 
 /**
  **********************************************************
- * \brief
+ * \brief   Enable transmit interrupt on a SCI
  *
- * \param
+ * \param   [in]    uartNb  The uart number
+ * \param   [in]    enable  true to enable, false to disable
  **********************************************************/
 void DRV_SCI_Enable_TxINT(drvSciNumber_t uartNb, bool enable)
 {
@@ -647,9 +654,9 @@ void DRV_SCI_Enable_TxINT(drvSciNumber_t uartNb, bool enable)
 
 /**
  **********************************************************
- * \brief
+ * \brief   Clear pending receive interrupt
  *
- * \param
+ * \param   [in]    uartNb  The uart number
  **********************************************************/
 void DRV_SCI_ClearIT_Rx(drvSciNumber_t uartNb)
 {
@@ -660,9 +667,9 @@ void DRV_SCI_ClearIT_Rx(drvSciNumber_t uartNb)
 
 /**
  **********************************************************
- * \brief
+ * \brief   Clear pending transmit interrupt
  *
- * \param
+ * \param   [in]    uartNb  The uart number
  **********************************************************/
 void DRV_SCI_ClearIT_Tx(drvSciNumber_t uartNb)
 {

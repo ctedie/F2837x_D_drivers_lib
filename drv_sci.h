@@ -35,22 +35,52 @@ extern "C"
 /* Public Macro definition -----------------------------------------------------------------------------------------*/
 /* Public Constant definition --------------------------------------------------------------------------------------*/
 /* Public Type definition  -----------------------------------------------------------------------------------------*/
+/**
+ *********************************************************
+ * \brief The receive callback type
+ *
+ * \details The purpose of this function is to get the
+ *          char to received on SCI. \n
+ *          This callback is called as long as the
+ *          receive fifo is not full
+ *
+ * \param [in]  pData    A pointer to user defined arg
+ * \param [in]  car      The read character
+ *********************************************************/
 typedef void (*drvSciReceiveCallback_t)(void *pData, uint16_t car);
-typedef bool (*drvSciTransmitCallback_t)(void *pData, uint16_t *car);
-typedef void (*drvSciEndOfTransmitionCallback_t)(void *pData);
 
+/**
+ *********************************************************
+ * \brief The transmit callback type
+ *
+ * \details The purpose of this function is to get the
+ *          char to send via SCI. \n
+ *          This callback is called when there is
+ *          space in the transmit fifo
+ *
+ * \param [in]  pData    A pointer to user defined arg
+ * \param [out] car      The read character
+ *********************************************************/
+typedef bool (*drvSciTransmitCallback_t)(void *pData, uint16_t *car);
+
+/** The end of transmission callback type */
+typedef void (*drvSciEndOfTransmissionCallback_t)(void *pData);
+
+/** The receive interrupt type */
 typedef void (*drvSciRxIsr_t)(void);
+
+/** The transmit interrupt type */
 typedef void (*drvSciTxIsr_t)(void);
 
 /** The specific return type enum */
 typedef enum
 {
-    DRV_SCI_SUCCESS = 0,    /**!< SERIAL_LINK_SUCCESS     */
-    DRV_SCI_ERROR,          /**!< SERIAL_LINK_ERROR       */
-    DRV_SCI_BAD_CONFIG,     /**!< SERIAL_LINK_BAD_CONFIG  */
-    DRV_SCI_NOT_INIT,       /**!< SERIAL_LINK_NOT_INIT    */
-    DRV_SCI_TX_ERROR,       /**!< SERIAL_LINK_TX_ERROR    */
-    DRV_SCI_BAD_ID,          /**!< SERIAL_LINK_BAD_ID      */
+    DRV_SCI_SUCCESS = 0,    /**< SERIAL_LINK_SUCCESS     */
+    DRV_SCI_ERROR,          /**< SERIAL_LINK_ERROR       */
+    DRV_SCI_BAD_CONFIG,     /**< SERIAL_LINK_BAD_CONFIG  */
+    DRV_SCI_NOT_INIT,       /**< SERIAL_LINK_NOT_INIT    */
+    DRV_SCI_TX_ERROR,       /**< SERIAL_LINK_TX_ERROR    */
+    DRV_SCI_BAD_ID,         /**< SERIAL_LINK_BAD_ID      */
     DRV_SCI_NO_INPUT_CHAR,
     DRV_SCI_TX_BUSY,
     DRV_SCI_ALREADY_INIT
@@ -110,7 +140,9 @@ typedef enum
 typedef struct
 {
 
+    /** The baudrate */
     drvSciSpeed_t baudrate;
+
     drvSciDataSize_t dataSize;
     drvSciParity_t parity;
     drvSciStopBit_t stopBit;
@@ -118,7 +150,7 @@ typedef struct
     void* pReceptionData;
     drvSciTransmitCallback_t cbTransmission;
     void* pTransmitionData;
-    drvSciEndOfTransmitionCallback_t cbEndOfTransmition;
+    drvSciEndOfTransmissionCallback_t cbEndOfTransmition;
     void* pEndOfTransmitionArg;
     bool initOk;
 }drvSciConfig_t;
