@@ -398,12 +398,12 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
     }
 
 #ifdef OS
-    pHandle->hwiConf.rxHwiParams.arg = NULL;
     Hwi_Params_init(&pHandle->hwiConf.rxHwiParams);
+    pHandle->hwiConf.rxHwiParams.arg = NULL;
     pHandle->hwiConf.rxHwiHandle = Hwi_create(rxIntVal, (Hwi_FuncPtr)cbRxIsr, &pHandle->hwiConf.rxHwiParams, NULL);
 
-    pHandle->hwiConf.txHwiParams.arg = NULL;
     Hwi_Params_init(&pHandle->hwiConf.txHwiParams);
+    pHandle->hwiConf.txHwiParams.arg = NULL;
     pHandle->hwiConf.txHwiHandle = Hwi_create(txIntVal, (Hwi_FuncPtr)cbTxIsr, &pHandle->hwiConf.txHwiParams, NULL);
 #else
 
