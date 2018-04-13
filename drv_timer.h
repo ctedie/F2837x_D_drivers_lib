@@ -43,8 +43,10 @@ typedef enum
 {
     DRV_TIMER_SUCCESS = 0,
     DRV_TIMER_ERROR,
+    DRV_TIMER_NOT_INIT,
     DRV_TIMER_BAD_CONFIG,
-    DRV_TIMER_ALREADY_INIT
+    DRV_TIMER_ALREADY_INIT,
+    DRV_NO_MORE_TIMER
 }drvTimerReturn_t;
 
 /** Timer number enum */
@@ -53,7 +55,13 @@ typedef enum
     TIMER0,
     TIMER1,
     TIMER2,
-
+#ifdef OS
+    TIMER3,
+    TIMER4,
+    TIMER5,
+    TIMER6,
+    TIMER7,
+#endif
     NB_TIMER
 }drvTimerNumber_t;
 
@@ -70,10 +78,12 @@ typedef struct
 drvTimerReturn_t DRV_TIMER_Init(drvTimerNumber_t timNb, float period_us, bool autoreload, drvTimerIsrCallback_t cbTimerEnd, void* pCallbackData);
 drvTimerReturn_t DRV_TIMER_Start(drvTimerNumber_t timNb);
 drvTimerReturn_t DRV_TIMER_Stop(drvTimerNumber_t timNb);
-drvTimerReturn_t DRV_TIMER_SetPeriod(drvTimerNumber_t timNb, float period);
+drvTimerReturn_t DRV_TIMER_SetPeriod(drvTimerNumber_t timNb, float period_us);
+#ifdef OS
+#else
 drvTimerReturn_t DRV_TIMER_Reload(drvTimerNumber_t timNb);
 inline uint32_t DRV_TIMER_GetCounter(drvTimerNumber_t timNb);
-
+#endif
 #endif /* DRV_TIMER_H_ */
 
 #ifdef __cplusplus

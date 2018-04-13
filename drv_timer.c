@@ -24,6 +24,12 @@
 
 #include "F28x_Project.h"
 
+#ifdef OS
+#include <ti/sysbios/hal/Timer.h>
+#endif
+
+#include "hw_ints.h"
+#include "drv_utils.h"
 #include "drv_timer.h"
 
 /* Macro definition ------------------------------------------------------------------------------------------------*/
@@ -33,7 +39,11 @@
 /** The timer handle structure */
 typedef struct
 {
+#ifdef OS
+    Timer_Handle    timerHandle;
+#else
     struct CPUTIMER_VARS *timer;        /** A pointer to the timer_var structure */
+#endif
     drvTimerIsrCallback_t cbTimerEnd;   /** The callback when timeout interrupt orccurs */
     void* pData;                        /** Data passed to the callback */
 
@@ -45,6 +55,35 @@ typedef struct
 
 /* Public variables ------------------------------------------------------------------------------------------------*/
 /* Private variables -----------------------------------------------------------------------------------------------*/
+#ifdef OS
+static TIMERHandle_t m_TIMERList[NB_TIMER] =
+{
+     {
+      .initOk = false
+     },
+     {
+      .initOk = false
+     },
+     {
+      .initOk = false
+     },
+     {
+      .initOk = false
+     },
+     {
+      .initOk = false
+     },
+     {
+      .initOk = false
+     },
+     {
+      .initOk = false
+     },
+     {
+      .initOk = false
+     },
+};
+#else
 static TIMERHandle_t m_TIMERList[NB_TIMER] =
 {
      {
@@ -58,9 +97,9 @@ static TIMERHandle_t m_TIMERList[NB_TIMER] =
      {
       .timer = &CpuTimer2,
       .initOk = false
-     },
+     }
 };
-
+#endif
 /* Private functions prototypes ------------------------------------------------------------------------------------*/
 __interrupt void timer0_isr(void);
 __interrupt void timer1_isr(void);
@@ -115,6 +154,8 @@ drvTimerReturn_t DRV_TIMER_Init(drvTimerNumber_t timNb, float period_us, bool au
 
     TIMERHandle_t *pHandle = &m_TIMERList[timNb];
 
+    Timer_Params params;
+
     if(pHandle->initOk)
     {
         return DRV_TIMER_ALREADY_INIT;
@@ -127,8 +168,24 @@ drvTimerReturn_t DRV_TIMER_Init(drvTimerNumber_t timNb, float period_us, bool au
 
     //TODO Make sure InitCpuTimers() was called before
 
-    DINT;
 
+    pHandle->timeoutVal_us = period_us;
+    pHandle->cbTimerEnd = cbTimerEnd;
+    pHandle->pData = pCallbackData;
+#ifdef OS
+    Timer_Params_init(&params);
+    params.arg = (xdc_UArg)pCallbackData;
+    params.startMode = Timer_StartMode_USER;
+    params.period = (uint32_t)period_us;
+
+    pHandle->timerHandle = Timer_create(Timer_ANY, (Timer_FuncPtr)cbTimerEnd, &params, NULL);
+    if(pHandle->timerHandle == NULL)
+    {
+        return DRV_NO_MORE_TIMER;
+    }
+//    Timer_setPeriodMicroSecs(pHandle->timerHandle, (uint32_t)period_us);
+#else
+    DINT;
     switch (timNb)
     {
         case TIMER0:
@@ -154,15 +211,12 @@ drvTimerReturn_t DRV_TIMER_Init(drvTimerNumber_t timNb, float period_us, bool au
             return DRV_TIMER_BAD_CONFIG;
     }
 
-    pHandle->timeoutVal_us = period_us;
-    pHandle->cbTimerEnd = cbTimerEnd;
-    pHandle->pData = pCallbackData;
-
     //TODO CPU FREQ instead of 200
     ConfigCpuTimer(pHandle->timer, 200, period_us);
 
 
     EINT;
+#endif
 
     pHandle->initOk = true;
     return ret;
@@ -179,8 +233,15 @@ drvTimerReturn_t DRV_TIMER_Init(drvTimerNumber_t timNb, float period_us, bool au
  *********************************************************/
 drvTimerReturn_t DRV_TIMER_Start(drvTimerNumber_t timNb)
 {
+    if(!m_TIMERList[timNb].initOk)
+    {
+        return DRV_TIMER_NOT_INIT;
+    }
+#ifdef OS
+    Timer_start(m_TIMERList[timNb].timerHandle);
+#else
     m_TIMERList[timNb].timer->RegsAddr->TCR.bit.TSS = 0;
-
+#endif
     return DRV_TIMER_SUCCESS;
 }
 
@@ -194,8 +255,16 @@ drvTimerReturn_t DRV_TIMER_Start(drvTimerNumber_t timNb)
  *********************************************************/
 drvTimerReturn_t DRV_TIMER_Stop(drvTimerNumber_t timNb)
 {
-    m_TIMERList[timNb].timer->RegsAddr->TCR.bit.TSS = 1;
+    if(!m_TIMERList[timNb].initOk)
+    {
+        return DRV_TIMER_NOT_INIT;
+    }
 
+#ifdef OS
+    Timer_stop(m_TIMERList[timNb].timerHandle);
+#else
+    m_TIMERList[timNb].timer->RegsAddr->TCR.bit.TSS = 1;
+#endif
     return DRV_TIMER_SUCCESS;
 }
 
@@ -208,15 +277,24 @@ drvTimerReturn_t DRV_TIMER_Stop(drvTimerNumber_t timNb)
  *
  * \return  The status
  *********************************************************/
-drvTimerReturn_t DRV_TIMER_SetPeriod(drvTimerNumber_t timNb, float period)
+drvTimerReturn_t DRV_TIMER_SetPeriod(drvTimerNumber_t timNb, float period_us)
 {
-    m_TIMERList[timNb].timer->RegsAddr->TCR.bit.TSS = 1;
-    ConfigCpuTimer(m_TIMERList[timNb].timer, 200, period);
+    if(!m_TIMERList[timNb].initOk)
+    {
+        return DRV_TIMER_NOT_INIT;
+    }
 
+#ifdef OS
+    Timer_setPeriodMicroSecs(m_TIMERList[timNb].timerHandle, (uint32_t)period_us);
+#else
+    m_TIMERList[timNb].timer->RegsAddr->TCR.bit.TSS = 1;
+    ConfigCpuTimer(m_TIMERList[timNb].timer, 200, period_us);
+#endif
 
     return DRV_TIMER_SUCCESS;
 }
-
+#ifdef OS
+#else
 /**
  *********************************************************
  * \brief   Reload the timer with the configured period value
@@ -227,6 +305,11 @@ drvTimerReturn_t DRV_TIMER_SetPeriod(drvTimerNumber_t timNb, float period)
  *********************************************************/
 drvTimerReturn_t DRV_TIMER_Reload(drvTimerNumber_t timNb)
 {
+    if(!m_TIMERList[timNb].initOk)
+    {
+        return DRV_TIMER_NOT_INIT;
+    }
+
     m_TIMERList[timNb].timer->RegsAddr->TCR.bit.TRB = 1;
 
     return DRV_TIMER_SUCCESS;
@@ -244,5 +327,6 @@ inline uint32_t DRV_TIMER_GetCounter(drvTimerNumber_t timNb)
 {
     return m_TIMERList[timNb].timer->RegsAddr->TIM.all;
 }
+#endif
 /** \} */
 /******************************************************** EOF *******************************************************/
