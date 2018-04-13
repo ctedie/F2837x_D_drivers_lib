@@ -62,9 +62,9 @@ typedef struct
     void* pTransmitionData;
     drvSciEndOfTransmissionCallback_t cbEndOfTransmition;
     void* pEndOfTransmitionArg;
-
+#ifdef OS
     HwiParams_t hwiConf;
-
+#endif
     bool initOk;
     bool isBusy;
     uint32_t _RX_ERRORS;
