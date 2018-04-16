@@ -32,8 +32,11 @@ extern "C"
 #include "F28x_Project.h"
 
 /* Public Macro definition -----------------------------------------------------------------------------------------*/
+#ifdef OS
+#define DRV_TIMER_CLEAR_IT_TIM0()
+#else
 #define DRV_TIMER_CLEAR_IT_TIM0()   (PieCtrlRegs.PIEACK.all = PIEACK_GROUP1)
-
+#endif
 /* Public Constant definition --------------------------------------------------------------------------------------*/
 /* Public Type definition  -----------------------------------------------------------------------------------------*/
 typedef void (*drvTimerIsrCallback_t)(void* pData);

@@ -662,7 +662,10 @@ void DRV_SCI_ClearIT_Rx(drvSciNumber_t uartNb)
 {
     m_UARTList[uartNb].sci->SCIFFRX.bit.RXFFOVRCLR=1;   // Clear Overflow flag
     m_UARTList[uartNb].sci->SCIFFRX.bit.RXFFINTCLR=1;   // Clear Interrupt flag
+#ifdef OS
+#else
     PieCtrlRegs.PIEACK.all|=0x100;
+#endif
 }
 
 /**
@@ -674,7 +677,10 @@ void DRV_SCI_ClearIT_Rx(drvSciNumber_t uartNb)
 void DRV_SCI_ClearIT_Tx(drvSciNumber_t uartNb)
 {
     m_UARTList[uartNb].sci->SCIFFTX.bit.TXFFINTCLR=1;
+#ifdef OS
+#else
     PieCtrlRegs.PIEACK.all|=0x100;
+#endif
 
 }
 
