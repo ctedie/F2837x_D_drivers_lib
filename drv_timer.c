@@ -26,6 +26,7 @@
 
 #ifdef OS
 #include <ti/sysbios/hal/Timer.h>
+#include <ti/sysbios/family/c28/Hwi.h>
 #endif
 
 #include "hw_ints.h"
@@ -100,6 +101,7 @@ static TIMERHandle_t m_TIMERList[NB_TIMER] =
      }
 };
 #endif
+
 /* Private functions prototypes ------------------------------------------------------------------------------------*/
 __interrupt void timer0_isr(void);
 __interrupt void timer1_isr(void);
@@ -233,12 +235,16 @@ drvTimerReturn_t DRV_TIMER_Init(drvTimerNumber_t timNb, float period_us, bool au
  *********************************************************/
 drvTimerReturn_t DRV_TIMER_Start(drvTimerNumber_t timNb)
 {
+    UInt hwiTimerKey;
+
     if(!m_TIMERList[timNb].initOk)
     {
         return DRV_TIMER_NOT_INIT;
     }
 #ifdef OS
+    hwiTimerKey = Hwi_disable();
     Timer_start(m_TIMERList[timNb].timerHandle);
+    Hwi_restore(hwiTimerKey);
 #else
     m_TIMERList[timNb].timer->RegsAddr->TCR.bit.TSS = 0;
 #endif
@@ -255,13 +261,17 @@ drvTimerReturn_t DRV_TIMER_Start(drvTimerNumber_t timNb)
  *********************************************************/
 drvTimerReturn_t DRV_TIMER_Stop(drvTimerNumber_t timNb)
 {
+    UInt hwiTimerKey;
+
     if(!m_TIMERList[timNb].initOk)
     {
         return DRV_TIMER_NOT_INIT;
     }
 
 #ifdef OS
+    hwiTimerKey = Hwi_disable();
     Timer_stop(m_TIMERList[timNb].timerHandle);
+    Hwi_restore(hwiTimerKey);
 #else
     m_TIMERList[timNb].timer->RegsAddr->TCR.bit.TSS = 1;
 #endif
@@ -273,7 +283,7 @@ drvTimerReturn_t DRV_TIMER_Stop(drvTimerNumber_t timNb)
  * \brief   Stop the timer then set a new timeout period
  *
  * \param [in]  timNb   The timer number
- * \param [in]  period  The new period
+ * \param [in]  period_us  The new period
  *
  * \return  The status
  *********************************************************/
