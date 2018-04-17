@@ -36,7 +36,7 @@
 #include "drv_utils.h"
 #include "drv_sci.h"
 
-
+//#pragma DATA_SECTION(m_UARTList,"uartmem");
 /* Macro definition ------------------------------------------------------------------------------------------------*/
 /* Constant definition ---------------------------------------------------------------------------------------------*/
 /* Type definition  ------------------------------------------------------------------------------------------------*/
@@ -64,6 +64,8 @@ typedef struct
     void* pEndOfTransmitionArg;
 #ifdef OS
     HwiParams_t hwiConf;
+    uint16_t rxIntNum;
+    uint16_t txIntNum;
 #endif
     bool initOk;
     bool isBusy;
@@ -81,17 +83,17 @@ static UARTHandle_t m_UARTList[NB_SERIAL] =
           .sci = &SciaRegs,
           .initOk = false,
           .isBusy = false
-     },
-     {
-          .sci = &ScibRegs,
-          .initOk = false,
-          .isBusy = false
-     },
-     {
-          .sci = &ScicRegs,
-          .initOk = false,
-          .isBusy = false
-     }
+     }//,
+//     {
+//          .sci = &ScibRegs,
+//          .initOk = false,
+//          .isBusy = false
+//     },
+//     {
+//          .sci = &ScicRegs,
+//          .initOk = false,
+//          .isBusy = false
+//     }
 };
 
 /* Private functions prototypes ------------------------------------------------------------------------------------*/
@@ -340,7 +342,6 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
 {
     drvSciReturn_t ret = DRV_SCI_SUCCESS;
     UARTHandle_t* pHandle = &m_UARTList[uartNb];
-    uint16_t rxIntVal, txIntVal;
 
     if(pHandle->initOk)
     {
@@ -351,8 +352,8 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
     {
         case SCI_A:
 #ifdef OS
-            rxIntVal = EXTRACT_INT_NUMBER(INT_SCIRXINTA);
-            txIntVal = EXTRACT_INT_NUMBER(INT_SCITXINTA);
+            pHandle->rxIntNum = EXTRACT_INT_NUMBER(INT_SCIRXINTA);
+            pHandle->txIntNum = EXTRACT_INT_NUMBER(INT_SCITXINTA);
 #else
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCIA_RX_INT = cbRxIsr;
@@ -360,10 +361,10 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
             EDIS;    // This is needed to disable write to EALLOW protected registers
 #endif
             break;
-        case SCI_B:
+/*        case SCI_B:
 #ifdef OS
-            rxIntVal = EXTRACT_INT_NUMBER(INT_SCIRXINTB);
-            txIntVal = EXTRACT_INT_NUMBER(INT_SCITXINTB);
+            pHandle->rxIntNum = EXTRACT_INT_NUMBER(INT_SCIRXINTB);
+            pHandle->txIntNum = EXTRACT_INT_NUMBER(INT_SCITXINTB);
 #else
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCIB_RX_INT = cbRxIsr;
@@ -373,8 +374,8 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
             break;
         case SCI_C:
 #ifdef OS
-            rxIntVal = EXTRACT_INT_NUMBER(INT_SCICRX);
-            txIntVal = EXTRACT_INT_NUMBER(INT_SCICTX);
+            pHandle->rxIntNum = EXTRACT_INT_NUMBER(INT_SCICRX);
+            pHandle->txIntNum = EXTRACT_INT_NUMBER(INT_SCICTX);
 #else
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCIC_RX_INT = cbRxIsr;
@@ -384,8 +385,8 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
             break;
         case SCI_D:
 #ifdef OS
-            rxIntVal = EXTRACT_INT_NUMBER(INT_SCIDRX);
-            txIntVal = EXTRACT_INT_NUMBER(INT_SCIDTX);
+            pHandle->rxIntNum = EXTRACT_INT_NUMBER(INT_SCIDRX);
+            pHandle->txIntNum = EXTRACT_INT_NUMBER(INT_SCIDTX);
 #else
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCID_RX_INT = cbRxIsr;
@@ -393,18 +394,26 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
             EDIS;    // This is needed to disable write to EALLOW protected registers
 #endif
             break;
-        default:
+*/        default:
             return DRV_SCI_BAD_CONFIG;
     }
 
 #ifdef OS
     Hwi_Params_init(&pHandle->hwiConf.rxHwiParams);
     pHandle->hwiConf.rxHwiParams.arg = NULL;
-    pHandle->hwiConf.rxHwiHandle = Hwi_create(rxIntVal, (Hwi_FuncPtr)cbRxIsr, &pHandle->hwiConf.rxHwiParams, NULL);
+    pHandle->hwiConf.rxHwiHandle = Hwi_create(pHandle->rxIntNum, (Hwi_FuncPtr)cbRxIsr, &pHandle->hwiConf.rxHwiParams, NULL);
+    if(pHandle->hwiConf.rxHwiHandle == NULL)
+    {
+        return DRV_SCI_BAD_CONFIG;
+    }
 
     Hwi_Params_init(&pHandle->hwiConf.txHwiParams);
     pHandle->hwiConf.txHwiParams.arg = NULL;
-    pHandle->hwiConf.txHwiHandle = Hwi_create(txIntVal, (Hwi_FuncPtr)cbTxIsr, &pHandle->hwiConf.txHwiParams, NULL);
+    pHandle->hwiConf.txHwiHandle = Hwi_create(pHandle->txIntNum, (Hwi_FuncPtr)cbTxIsr, &pHandle->hwiConf.txHwiParams, NULL);
+    if(pHandle->hwiConf.txHwiHandle == NULL)
+    {
+        return DRV_SCI_BAD_CONFIG;
+    }
 #else
 
 #endif
@@ -663,6 +672,9 @@ void DRV_SCI_ClearIT_Rx(drvSciNumber_t uartNb)
     m_UARTList[uartNb].sci->SCIFFRX.bit.RXFFOVRCLR=1;   // Clear Overflow flag
     m_UARTList[uartNb].sci->SCIFFRX.bit.RXFFINTCLR=1;   // Clear Interrupt flag
 #ifdef OS
+//    Hwi_clearInterrupt(m_UARTList[uartNb].rxIntNum);
+//    Hwi_disableInterrupt(m_UARTList[uartNb].rxIntNum);
+//    PieCtrlRegs.PIEACK.all|=0x100;
 #else
     PieCtrlRegs.PIEACK.all|=0x100;
 #endif
@@ -678,6 +690,8 @@ void DRV_SCI_ClearIT_Tx(drvSciNumber_t uartNb)
 {
     m_UARTList[uartNb].sci->SCIFFTX.bit.TXFFINTCLR=1;
 #ifdef OS
+//    Hwi_clearInterrupt(m_UARTList[uartNb].txIntNum);
+//    PieCtrlRegs.PIEACK.all|=0x100;
 #else
     PieCtrlRegs.PIEACK.all|=0x100;
 #endif

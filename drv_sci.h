@@ -90,9 +90,9 @@ typedef enum
 typedef enum
 {
     SCI_A = 0,
-    SCI_B,
-    SCI_C,
-    SCI_D,
+//    SCI_B,
+//    SCI_C,
+//    SCI_D,
 
     NB_SERIAL
 }drvSciNumber_t;
@@ -111,7 +111,7 @@ typedef enum
 /** The SCI data size enum */
 typedef enum
 {
-    DRV_SCI_BIT_1 = 0,
+    DRV_SCI_BIT_1 = 1,
     DRV_SCI_BIT_2,
     DRV_SCI_BIT_3,
     DRV_SCI_BIT_4,
