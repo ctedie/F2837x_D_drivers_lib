@@ -83,17 +83,22 @@ static UARTHandle_t m_UARTList[NB_SERIAL] =
           .sci = &SciaRegs,
           .initOk = false,
           .isBusy = false
-     }//,
-//     {
-//          .sci = &ScibRegs,
-//          .initOk = false,
-//          .isBusy = false
-//     },
-//     {
-//          .sci = &ScicRegs,
-//          .initOk = false,
-//          .isBusy = false
-//     }
+     },
+     {
+          .sci = &ScibRegs,
+          .initOk = false,
+          .isBusy = false
+     },
+     {
+          .sci = &ScicRegs,
+          .initOk = false,
+          .isBusy = false
+     },
+     {
+          .sci = &ScidRegs,
+          .initOk = false,
+          .isBusy = false
+     }
 };
 
 /* Private functions prototypes ------------------------------------------------------------------------------------*/
@@ -355,21 +360,33 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
             pHandle->rxIntNum = EXTRACT_INT_NUMBER(INT_SCIRXINTA);
             pHandle->txIntNum = EXTRACT_INT_NUMBER(INT_SCITXINTA);
 #else
+            DINT;
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCIA_RX_INT = cbRxIsr;
             PieVectTable.SCIA_TX_INT = cbTxIsr;
             EDIS;    // This is needed to disable write to EALLOW protected registers
+            PieCtrlRegs.PIECTRL.bit.ENPIE = 1;   // Enable the PIE block
+            PieCtrlRegs.PIEIER9.bit.INTx1 = 1;   // PIE Group 9, INT1 SCIA_RX
+            PieCtrlRegs.PIEIER9.bit.INTx2 = 1;   // PIE Group 9, INT2 SCIA_TX
+            IER |= M_INT9;                         // Enable CPU INT Group 9
+            EINT;
 #endif
             break;
-/*        case SCI_B:
+        case SCI_B:
 #ifdef OS
             pHandle->rxIntNum = EXTRACT_INT_NUMBER(INT_SCIRXINTB);
             pHandle->txIntNum = EXTRACT_INT_NUMBER(INT_SCITXINTB);
 #else
+            DINT;
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCIB_RX_INT = cbRxIsr;
             PieVectTable.SCIB_TX_INT = cbTxIsr;
             EDIS;    // This is needed to disable write to EALLOW protected registers
+            PieCtrlRegs.PIECTRL.bit.ENPIE = 1;   // Enable the PIE block
+            PieCtrlRegs.PIEIER9.bit.INTx3 = 1;   // PIE Group 9, INT3 SCIB_RX
+            PieCtrlRegs.PIEIER9.bit.INTx4 = 1;   // PIE Group 9, INT4 SCIB_TX
+            IER |= M_INT9;                         // Enable CPU INT Group 9
+            EINT;
 #endif
             break;
         case SCI_C:
@@ -377,10 +394,16 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
             pHandle->rxIntNum = EXTRACT_INT_NUMBER(INT_SCICRX);
             pHandle->txIntNum = EXTRACT_INT_NUMBER(INT_SCICTX);
 #else
+            DINT;
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCIC_RX_INT = cbRxIsr;
             PieVectTable.SCIC_TX_INT = cbTxIsr;
             EDIS;    // This is needed to disable write to EALLOW protected registers
+            PieCtrlRegs.PIECTRL.bit.ENPIE = 1;   // Enable the PIE block
+            PieCtrlRegs.PIEIER8.bit.INTx5 = 1;   // PIE Group 8, INT5 SCIC_RX
+            PieCtrlRegs.PIEIER8.bit.INTx6 = 1;   // PIE Group 8, INT6 SCIC_TX
+            IER |= M_INT8;                         // Enable CPU INT Group 8
+            EINT;
 #endif
             break;
         case SCI_D:
@@ -388,13 +411,19 @@ drvSciReturn_t DRV_SCI_BasicInit(drvSciNumber_t uartNb,
             pHandle->rxIntNum = EXTRACT_INT_NUMBER(INT_SCIDRX);
             pHandle->txIntNum = EXTRACT_INT_NUMBER(INT_SCIDTX);
 #else
+            DINT;
             EALLOW;  // This is needed to write to EALLOW protected registers
             PieVectTable.SCID_RX_INT = cbRxIsr;
             PieVectTable.SCID_TX_INT = cbTxIsr;
             EDIS;    // This is needed to disable write to EALLOW protected registers
+            PieCtrlRegs.PIECTRL.bit.ENPIE = 1;   // Enable the PIE block
+            PieCtrlRegs.PIEIER8.bit.INTx7 = 1;   // PIE Group 8, INT1 SCID_RX
+            PieCtrlRegs.PIEIER8.bit.INTx8 = 1;   // PIE Group 8, INT2 SCID_TX
+            IER |= M_INT8;                         // Enable CPU INT Group 8
+            EINT;
 #endif
             break;
-*/        default:
+        default:
             return DRV_SCI_BAD_CONFIG;
     }
 
@@ -672,11 +701,15 @@ void DRV_SCI_ClearIT_Rx(drvSciNumber_t uartNb)
     m_UARTList[uartNb].sci->SCIFFRX.bit.RXFFOVRCLR=1;   // Clear Overflow flag
     m_UARTList[uartNb].sci->SCIFFRX.bit.RXFFINTCLR=1;   // Clear Interrupt flag
 #ifdef OS
-//    Hwi_clearInterrupt(m_UARTList[uartNb].rxIntNum);
-//    Hwi_disableInterrupt(m_UARTList[uartNb].rxIntNum);
-//    PieCtrlRegs.PIEACK.all|=0x100;
 #else
-    PieCtrlRegs.PIEACK.all|=0x100;
+    if((m_UARTList[uartNb].sci == (&SciaRegs)) || (m_UARTList[uartNb].sci == (&ScibRegs)))
+    {
+        PieCtrlRegs.PIEACK.all|=0x100;
+    }
+    else if((m_UARTList[uartNb].sci == (&ScicRegs)) || (m_UARTList[uartNb].sci == (&ScidRegs)))
+    {
+        PieCtrlRegs.PIEACK.all|=0x80;
+    }
 #endif
 }
 
@@ -690,10 +723,15 @@ void DRV_SCI_ClearIT_Tx(drvSciNumber_t uartNb)
 {
     m_UARTList[uartNb].sci->SCIFFTX.bit.TXFFINTCLR=1;
 #ifdef OS
-//    Hwi_clearInterrupt(m_UARTList[uartNb].txIntNum);
-//    PieCtrlRegs.PIEACK.all|=0x100;
 #else
-    PieCtrlRegs.PIEACK.all|=0x100;
+    if((m_UARTList[uartNb].sci == (&SciaRegs)) || (m_UARTList[uartNb].sci == (&ScibRegs)))
+    {
+        PieCtrlRegs.PIEACK.all|=0x100;
+    }
+    else if((m_UARTList[uartNb].sci == (&ScicRegs)) || (m_UARTList[uartNb].sci == (&ScidRegs)))
+    {
+        PieCtrlRegs.PIEACK.all|=0x80;
+    }
 #endif
 
 }
