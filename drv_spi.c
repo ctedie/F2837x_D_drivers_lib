@@ -34,7 +34,7 @@
 typedef struct
 {
 	volatile struct SPI_REGS *spiReg;
-	DRV_GPIO_Pin_t cs_pin;
+//	DRV_GPIO_Pin_t cs_pin;
 
 	bool isInit;
 }SPI_Handle_t;
@@ -48,8 +48,6 @@ SPI_Handle_t m_spiHandle[NB_SPI] =
 		.spiReg = &SpiaRegs,
 		.isInit = false
 	},
-//FIXME with family
-#ifdef F28_2837xD
 	{
 		.spiReg = &SpibRegs,
 		.isInit = false
@@ -58,22 +56,23 @@ SPI_Handle_t m_spiHandle[NB_SPI] =
 		.spiReg = &SpicRegs,
 		.isInit = false
 	}
-#endif
 };
 /* Private functions prototypes ------------------------------------------------------------------------------------*/
 /* Private functions -----------------------------------------------------------------------------------------------*/
 
 /**
  **********************************************************
- * \brief
+ * \brief   The drivers initialization function
  *
- * \param
+ * \param   [in]    spiNb       The spi number to configure
+ * \param   [in]    pConfig     A pointer to a predefined
+ *                              configuration structure
  *
- * \return
+ * \return  One of \ref drvSpiReturn_t values
  **********************************************************/
-DRV_SPI_Return_t DRV_SPI_Init(DRV_SPI_Nb_t spiNb, DRV_SPI_Config_t *pConfig)
+drvSpiReturn_t DRV_SPI_Init(drvSpiNb_t spiNb, drvSpiConfig_t *pConfig)
 {
-	DRV_SPI_Return_t ret = SPI_SUCCESS;
+    drvSpiReturn_t ret = SPI_SUCCESS;
 	SPI_Handle_t *pSpiHdl = &m_spiHandle[spiNb];
 
 

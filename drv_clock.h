@@ -4,7 +4,7 @@
 /**
  ********************************************************************************************************************
  *  \author     tedie.cedric
- *  \date       28 mars 2018
+ *  \date       18 avril 2018
  *  \addtogroup DRIVERS
  *  \{
  *  \addtogroup DRV_CLOCK
@@ -15,7 +15,7 @@
  ********************************************************************************************************************
  *  \file       DRV_CLOCK.h
  *  
- *  \brief      The timer driver header file
+ *  \brief      The clock driver header file
  *
  *  \details
  *

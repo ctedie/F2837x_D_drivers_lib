@@ -47,11 +47,8 @@ typedef enum
 typedef enum
 {
 	SPI_A,
-	//FIXME with family
-#ifdef F28_2837xD
 	SPI_B,
 	SPI_C,
-#endif
 
 	NB_SPI
 }drvSpiNb_t;

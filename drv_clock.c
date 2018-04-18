@@ -4,7 +4,7 @@
 /**
  *********************************************************************************************************************
  *  \author     tedie.cedric
- *  \date       28 mars 2018
+ *  \date       21 avril 2018
  *  \addtogroup DRV_CLOCK
  *  \{
  ********************************************************************************************************************/
@@ -25,7 +25,6 @@
 #include "F28x_Project.h"
 
 #include <ti/sysbios/knl/Clock.h>
-#include <ti/sysbios/family/c28/Hwi.h>
 
 #include "hw_ints.h"
 #include "drv_utils.h"
@@ -39,8 +38,8 @@
 typedef struct
 {
     Clock_Handle    clockHandle;
-    drvClockIsrCallback_t cbEndOfPeriod;   /** The callback when timeout interrupt orccurs */
-    void* pData;                        /** Data passed to the callback */
+    drvClockIsrCallback_t cbEndOfPeriod;   /** The callback at the end of period */
+    void* pData;                           /** Data passed to the callback */
 
     uint32_t timeoutVal_ms;                /** The timeout period */
 
@@ -89,7 +88,7 @@ static CLOCKHandle_t m_CLOCKList[NB_CLOCK] =
  * \param [in]  timNb           The timer number
  * \param [in]  period_ms       The period in us
  * \param [in]  autoreload      True if autoreload
- * \param [in]  cbTimerEnd      The callback when the timeout interrupt occurs
+ * \param [in]  cbEndOfPeriod   The callback at the end of period
  * \param [in]  pCallbackData   The data to pass to the callback
  *
  * \return  One of \ref drvClockReturn_t values
