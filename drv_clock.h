@@ -3,26 +3,27 @@
  ********************************************************************************************************************/
 /**
  ********************************************************************************************************************
- *  \author		tedie.cedric
- *  \date		28 mars 2018
+ *  \author     tedie.cedric
+ *  \date       28 mars 2018
  *  \addtogroup DRIVERS
  *  \{
- *  \addtogroup	DRV_TIMER
+ *  \addtogroup DRV_CLOCK
  *  \{
- *  \brief A driver for timer functions
+ *  \brief A driver for periodical functions
  ********************************************************************************************************************/
 /**
  ********************************************************************************************************************
- *  \file		drv_timer.h
+ *  \file       DRV_CLOCK.h
  *  
- *  \brief		The timer driver header file
+ *  \brief      The timer driver header file
  *
- *  \details	
+ *  \details
  *
  ********************************************************************************************************************/
-#ifndef DRV_TIMER_H_
-#define DRV_TIMER_H_
+#ifndef DRV_CLOCK_H_
+#define DRV_CLOCK_H_
 
+#ifdef OS
 #ifdef __cplusplus
 extern "C"
 {
@@ -32,56 +33,55 @@ extern "C"
 #include "F28x_Project.h"
 
 /* Public Macro definition -----------------------------------------------------------------------------------------*/
-#ifdef OS
-#define DRV_TIMER_CLEAR_IT_TIM0()
-#else
-#define DRV_TIMER_CLEAR_IT_TIM0()   (PieCtrlRegs.PIEACK.all = PIEACK_GROUP1)
-#endif
+
 /* Public Constant definition --------------------------------------------------------------------------------------*/
 /* Public Type definition  -----------------------------------------------------------------------------------------*/
-typedef void (*drvTimerIsrCallback_t)(void* pData);
+typedef void (*drvClockIsrCallback_t)(void* pData);
 
 /** Return type enum */
 typedef enum
 {
-    DRV_TIMER_SUCCESS = 0,
-    DRV_TIMER_ERROR,
-    DRV_TIMER_NOT_INIT,
-    DRV_TIMER_BAD_CONFIG,
-    DRV_TIMER_ALREADY_INIT,
-    DRV_NO_MORE_TIMER
-}drvTimerReturn_t;
+    DRV_CLOCK_SUCCESS = 0,
+    DRV_CLOCK_ERROR,
+    DRV_CLOCK_NOT_INIT,
+    DRV_CLOCK_BAD_CONFIG,
+    DRV_CLOCK_ALREADY_INIT,
+    DRV_CLOCK_NO_MORE_CLOCK
+}drvClockReturn_t;
 
 /** Timer number enum */
 typedef enum
 {
-    TIMER0,
-    TIMER1,
-    TIMER2,
-
-    NB_TIMER
-}drvTimerNumber_t;
+    CLOCK0,
+    CLOCK1,
+    CLOCK2,
+    CLOCK3,
+    CLOCK4,
+    CLOCK5,
+    CLOCK6,
+    CLOCK7,
+    NB_CLOCK
+}drvClockNumber_t;
 
 /** Driver configuration structure */
 typedef struct
 {
-    drvTimerIsrCallback_t cbTimerEnd;
+    drvClockIsrCallback_t cbTimerEnd;
     void* pData;
-}drvTimerConfig_t;
+}drvClockConfig_t;
 
 /* Public variables ------------------------------------------------------------------------------------------------*/
 /* Public functions ------------------------------------------------------------------------------------------------*/
 
-drvTimerReturn_t DRV_TIMER_Init(drvTimerNumber_t timNb, float period_us, bool autoreload, drvTimerIsrCallback_t cbTimerEnd, void* pCallbackData);
-drvTimerReturn_t DRV_TIMER_Start(drvTimerNumber_t timNb);
-drvTimerReturn_t DRV_TIMER_Stop(drvTimerNumber_t timNb);
-drvTimerReturn_t DRV_TIMER_SetPeriod(drvTimerNumber_t timNb, float period_us);
-#ifdef OS
+drvClockReturn_t DRV_CLOCK_Init(drvClockNumber_t timNb, uint32_t period_ms, bool autoreload, drvClockIsrCallback_t cbEndOfPeriod, void* pCallbackData);
+drvClockReturn_t DRV_CLOCK_Start(drvClockNumber_t timNb);
+drvClockReturn_t DRV_CLOCK_Stop(drvClockNumber_t timNb);
+drvClockReturn_t DRV_CLOCK_SetPeriod(drvClockNumber_t timNb, uint32_t period_ms);
+
 #else
-drvTimerReturn_t DRV_TIMER_Reload(drvTimerNumber_t timNb);
-inline uint32_t DRV_TIMER_GetCounter(drvTimerNumber_t timNb);
+#error "This module can't be use without OS"
 #endif
-#endif /* DRV_TIMER_H_ */
+#endif /* DRV_CLOCK_H_ */
 
 #ifdef __cplusplus
 }

@@ -87,7 +87,7 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO4_GPIO             0
-#define DRV_GPIO_MUX_GPIO4_EPWM3A           0
+#define DRV_GPIO_MUX_GPIO4_EPWM3A           1
 #define DRV_GPIO_MUX_GPIO4_                 0
 #define DRV_GPIO_MUX_GPIO4_                 0
 #define DRV_GPIO_MUX_GPIO4_                 0
@@ -103,7 +103,7 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO5_GPIO             0
-#define DRV_GPIO_MUX_GPIO5_EPWM3B                 0
+#define DRV_GPIO_MUX_GPIO5_EPWM3B           1
 #define DRV_GPIO_MUX_GPIO5_                 0
 #define DRV_GPIO_MUX_GPIO5_                 0
 #define DRV_GPIO_MUX_GPIO5_                 0
@@ -119,7 +119,7 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO6_GPIO             0
-#define DRV_GPIO_MUX_GPIO6_EPWM4A                 0
+#define DRV_GPIO_MUX_GPIO6_EPWM4A           1
 #define DRV_GPIO_MUX_GPIO6_                 0
 #define DRV_GPIO_MUX_GPIO6_                 0
 #define DRV_GPIO_MUX_GPIO6_                 0
@@ -135,7 +135,7 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO7_GPIO             0
-#define DRV_GPIO_MUX_GPIO7_EPWM4B                 0
+#define DRV_GPIO_MUX_GPIO7_EPWM4B           1
 #define DRV_GPIO_MUX_GPIO7_                 0
 #define DRV_GPIO_MUX_GPIO7_                 0
 #define DRV_GPIO_MUX_GPIO7_                 0
@@ -151,7 +151,7 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO8_GPIO             0
-#define DRV_GPIO_MUX_GPIO8_EPWM5A                 0
+#define DRV_GPIO_MUX_GPIO8_EPWM5A           1
 #define DRV_GPIO_MUX_GPIO8_                 0
 #define DRV_GPIO_MUX_GPIO8_                 0
 #define DRV_GPIO_MUX_GPIO8_                 0
@@ -167,7 +167,7 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO9_GPIO             0
-#define DRV_GPIO_MUX_GPIO9_EPWM5B                0
+#define DRV_GPIO_MUX_GPIO9_EPWM5B           1
 #define DRV_GPIO_MUX_GPIO9_                 0
 #define DRV_GPIO_MUX_GPIO9_                 0
 #define DRV_GPIO_MUX_GPIO9_                 0
@@ -183,7 +183,7 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO10_GPIO            0
-#define DRV_GPIO_MUX_GPIO10_EPWM6A                0
+#define DRV_GPIO_MUX_GPIO10_EPWM6A          1
 #define DRV_GPIO_MUX_GPIO10_                0
 #define DRV_GPIO_MUX_GPIO10_                0
 #define DRV_GPIO_MUX_GPIO10_                0
@@ -199,7 +199,7 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO11_GPIO            0
-#define DRV_GPIO_MUX_GPIO11_EPWM6B                0
+#define DRV_GPIO_MUX_GPIO11_EPWM6B          1
 #define DRV_GPIO_MUX_GPIO11_                0
 #define DRV_GPIO_MUX_GPIO11_                0
 #define DRV_GPIO_MUX_GPIO11_                0
@@ -215,7 +215,7 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO12_GPIO            0
-#define DRV_GPIO_MUX_GPIO12_EPWM7A                0
+#define DRV_GPIO_MUX_GPIO12_EPWM7A          1
 #define DRV_GPIO_MUX_GPIO12_                0
 #define DRV_GPIO_MUX_GPIO12_                0
 #define DRV_GPIO_MUX_GPIO12_                0
@@ -231,7 +231,7 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO13_GPIO            0
-#define DRV_GPIO_MUX_GPIO13_EPWM7B                0
+#define DRV_GPIO_MUX_GPIO13_EPWM7B          1
 #define DRV_GPIO_MUX_GPIO13_                0
 #define DRV_GPIO_MUX_GPIO13_                0
 #define DRV_GPIO_MUX_GPIO13_                0
@@ -247,7 +247,7 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO14_GPIO            0
-#define DRV_GPIO_MUX_GPIO14_EPWM8A                0
+#define DRV_GPIO_MUX_GPIO14_EPWM8A          1
 #define DRV_GPIO_MUX_GPIO14_                0
 #define DRV_GPIO_MUX_GPIO14_                0
 #define DRV_GPIO_MUX_GPIO14_                0
@@ -263,7 +263,7 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO15_GPIO            0
-#define DRV_GPIO_MUX_GPIO15_EPWM8B          0
+#define DRV_GPIO_MUX_GPIO15_EPWM8B          1
 #define DRV_GPIO_MUX_GPIO15_                0
 #define DRV_GPIO_MUX_GPIO15_                0
 #define DRV_GPIO_MUX_GPIO15_                0
