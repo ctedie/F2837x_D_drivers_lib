@@ -250,7 +250,7 @@ extern "C"
 #define DRV_GPIO_MUX_GPIO3_EMPW2B           1
 #define DRV_GPIO_MUX_GPIO3_OUTXBAR2         2
 #define DRV_GPIO_MUX_GPIO3_MCBSPBCLKR       3
-#define DRV_GPIO_MUX_GPIO3_OUTXBAR2         5
+//#define DRV_GPIO_MUX_GPIO3_OUTXBAR2         5 //The same as 2
 #define DRV_GPIO_MUX_GPIO3_I2CBSCL          6
 
 /** \} */
@@ -1125,13 +1125,13 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO58_GPIO            0
-#define DRV_GPIO_MUX_GPIO58_                0
-#define DRV_GPIO_MUX_GPIO58_                0
-#define DRV_GPIO_MUX_GPIO58_                0
-#define DRV_GPIO_MUX_GPIO58_                0
-#define DRV_GPIO_MUX_GPIO58_                0
-#define DRV_GPIO_MUX_GPIO58_                0
-#define DRV_GPIO_MUX_GPIO58_                0
+#define DRV_GPIO_MUX_GPIO58_MCLKRA          1
+#define DRV_GPIO_MUX_GPIO58_EM1D26          2
+#define DRV_GPIO_MUX_GPIO58_EM2D10          3
+#define DRV_GPIO_MUX_GPIO58_OUTPUTXBAR1     5
+#define DRV_GPIO_MUX_GPIO58_SPICLKB         6
+#define DRV_GPIO_MUX_GPIO58_SD2_D2          7
+#define DRV_GPIO_MUX_GPIO58_SPISIMOA        15
 
 /** \} */
 
@@ -1141,13 +1141,13 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO59_GPIO            0
-#define DRV_GPIO_MUX_GPIO59_                0
-#define DRV_GPIO_MUX_GPIO59_                0
-#define DRV_GPIO_MUX_GPIO59_                0
-#define DRV_GPIO_MUX_GPIO59_                0
-#define DRV_GPIO_MUX_GPIO59_                0
-#define DRV_GPIO_MUX_GPIO59_                0
-#define DRV_GPIO_MUX_GPIO59_                0
+#define DRV_GPIO_MUX_GPIO59_MFSRA           1
+#define DRV_GPIO_MUX_GPIO59_EM1D25          2
+#define DRV_GPIO_MUX_GPIO59_EM2D9           3
+#define DRV_GPIO_MUX_GPIO59_OUTPUTXBAR2     5
+#define DRV_GPIO_MUX_GPIO59_SPISTEB         6
+#define DRV_GPIO_MUX_GPIO59_SD2_C2          7
+#define DRV_GPIO_MUX_GPIO59_SPISOMIA        15
 
 /** \} */
 
@@ -1157,13 +1157,13 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO60_GPIO            0
-#define DRV_GPIO_MUX_GPIO60_                0
-#define DRV_GPIO_MUX_GPIO60_                0
-#define DRV_GPIO_MUX_GPIO60_                0
-#define DRV_GPIO_MUX_GPIO60_                0
-#define DRV_GPIO_MUX_GPIO60_                0
-#define DRV_GPIO_MUX_GPIO60_                0
-#define DRV_GPIO_MUX_GPIO60_                0
+#define DRV_GPIO_MUX_GPIO60_MCLKRB          1
+#define DRV_GPIO_MUX_GPIO60_EM1D24          2
+#define DRV_GPIO_MUX_GPIO60_EM2D8           3
+#define DRV_GPIO_MUX_GPIO60_OUTPUTXBAR3     5
+#define DRV_GPIO_MUX_GPIO60_SPISIMOB        6
+#define DRV_GPIO_MUX_GPIO60_SD2_D3          7
+#define DRV_GPIO_MUX_GPIO60_SPICLKA         15
 
 /** \} */
 
@@ -1173,13 +1173,13 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO61_GPIO            0
-#define DRV_GPIO_MUX_GPIO61_                0
-#define DRV_GPIO_MUX_GPIO61_                0
-#define DRV_GPIO_MUX_GPIO61_                0
-#define DRV_GPIO_MUX_GPIO61_                0
-#define DRV_GPIO_MUX_GPIO61_                0
-#define DRV_GPIO_MUX_GPIO61_                0
-#define DRV_GPIO_MUX_GPIO61_                0
+#define DRV_GPIO_MUX_GPIO61_MFSRB           1
+#define DRV_GPIO_MUX_GPIO61_EM1D23          2
+#define DRV_GPIO_MUX_GPIO61_EM2D7           3
+#define DRV_GPIO_MUX_GPIO61_OUTPUTXBAR4     5
+#define DRV_GPIO_MUX_GPIO61_SPISOMIB        6
+#define DRV_GPIO_MUX_GPIO61_SD2_C3          7
+#define DRV_GPIO_MUX_GPIO61_SPISTEA         15
 
 /** \} */
 

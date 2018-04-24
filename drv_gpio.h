@@ -63,15 +63,45 @@ typedef enum
     DRV_GPIO_PIN_ACTIVE
 }drvGpioPinState_t;
 
+
+typedef enum
+{
+    DRV_GPIO_CPU1 = 0,
+    DRV_GPIO_CLA1,
+    DRV_GPIO_CPU2,
+    DRV_GPIO_CLA2
+}drvGpioCpu_t;
+
+//typedef enum
+//{
+//    DRV_GPIO_CPU1 = 0,
+//    DRV_GPIO_CLA1,
+//    DRV_GPIO_CPU2,
+//    DRV_GPIO_CLA2
+//}drvGpioCpu_t;
+
+
 //TODO Add GPIO FLAGS
+typedef enum
+{
+    DRV_GPIO_FLAGS_SYNC,
+    DRV_GPIO_FLAGS_QUAL3,
+    DRV_GPIO_FLAGS_QUAL6,
+    DRV_GPIO_FLAGS_ASYNC
+}drvGpioFlags_t;
+
+
 /** The GPIO pin structure */
 typedef struct
 {
     uint16_t pin_number;    /**< Pin number */
     uint16_t pin_type;      /**< The pin type \see DRV_GPIO_DEFINES */
-    uint16_t cpu;
+    drvGpioCpu_t cpu;
     drvGpioPinDirection direction;
     drvGpioPolarity polarity;
+//    bool pullup;
+//    bool openDrain;
+//    drvGpioFlags_t sync;
     drvGpioPinState_t defaultState;
 
 //    bool isInit;

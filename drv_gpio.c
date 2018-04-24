@@ -49,8 +49,8 @@ drvGpioReturn_t DRV_GPIO_PinInit(drvGpioPin_t *pin)
 
     //TODO improvements
 
-    GPIO_SetupPinMux(pin->pin_number, pin->cpu, pin->pin_type);
-
+    GPIO_SetupPinMux(pin->pin_number, (uint16_t)pin->cpu, pin->pin_type);
+//    GPIO_SetupPinOptions(pin->pin_number, pin->direction, flags)
     if(pin->pin_type == DRV_GPIO_DIR_OUTPUT)
     {
         GPIO_WritePin(pin->pin_number, pin->defaultState);

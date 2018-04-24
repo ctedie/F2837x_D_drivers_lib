@@ -59,37 +59,41 @@ typedef enum
 
 typedef enum
 {
-	SPI_1MHz,
-	SPI_2MHz,
-	SPI_5MHz,
-	SPI_10MHz,
-	SPI_15MHz,
-	SPI_20MHz,
-	SPI_25MHz
+	SPI_1MHz = 1000000,
+	SPI_2MHz = 2000000,
+	SPI_5MHz = 5000000,
+	SPI_10MHz = 10000000,
+	SPI_20MHz = 20000000
 }drvSpiSpeed_t;
 
 
 typedef enum
 {
-	SPI_8bits,
-	SPI_12bits,
-	SPI_16bits
+	SPI_8bits = 7,
+	SPI_12bits = 11,
+	SPI_16bits = 15
 }drvSpiWordLength_t;
 
 typedef enum
 {
-	SPI_MODE_0,
-	SPI_MODE_1,
-	SPI_MODE_2,
-	SPI_MODE_3
-}drvSpiMode_t;
+	SPI_MODE0_CPOL0_CPHA0,
+	SPI_MODE1_CPOL0_CPHA1,
+	SPI_MODE2_CPOL1_CPHA0,
+	SPI_MODE3_CPOL1_CPHA1
+}drvSpiClkMode_t;
 
+typedef enum
+{
+    DRV_SPI_SLAVE = 0,
+    DRV_SPI_MASTER
+}drvSpiNetworkMode_t;
 
 typedef struct
 {
+    drvSpiNetworkMode_t mode;
 	drvSpiSpeed_t speed;
 	drvSpiWordLength_t wordLength;
-	drvSpiMode_t mode;
+	drvSpiClkMode_t clkMode;
 
 	bool manualCS;
 	uint16_t cs_pin;
