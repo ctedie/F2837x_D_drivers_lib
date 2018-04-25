@@ -78,9 +78,8 @@ drvClockReturn_t DRV_CLOCK_Start(drvClockNumber_t timNb);
 drvClockReturn_t DRV_CLOCK_Stop(drvClockNumber_t timNb);
 drvClockReturn_t DRV_CLOCK_SetPeriod(drvClockNumber_t timNb, uint32_t period_ms);
 
-#else
-#error "This module can't be use without OS"
-#endif
+#endif /* OS */
+
 #endif /* DRV_CLOCK_H_ */
 
 #ifdef __cplusplus

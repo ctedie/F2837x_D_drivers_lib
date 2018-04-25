@@ -155,9 +155,9 @@ drvTimerReturn_t DRV_TIMER_Init(drvTimerNumber_t timNb, float period_us, bool au
     drvTimerReturn_t ret = DRV_TIMER_SUCCESS;
 
     TIMERHandle_t *pHandle = &m_TIMERList[timNb];
-
+#ifdef OS
     Timer_Params params;
-
+#endif
     if(pHandle->initOk)
     {
         return DRV_TIMER_ALREADY_INIT;
@@ -235,13 +235,13 @@ drvTimerReturn_t DRV_TIMER_Init(drvTimerNumber_t timNb, float period_us, bool au
  *********************************************************/
 drvTimerReturn_t DRV_TIMER_Start(drvTimerNumber_t timNb)
 {
-    UInt hwiTimerKey;
 
     if(!m_TIMERList[timNb].initOk)
     {
         return DRV_TIMER_NOT_INIT;
     }
 #ifdef OS
+    UInt hwiTimerKey;
     hwiTimerKey = Hwi_disable();
     Timer_start(m_TIMERList[timNb].timerHandle);
     Hwi_restore(hwiTimerKey);
@@ -261,7 +261,6 @@ drvTimerReturn_t DRV_TIMER_Start(drvTimerNumber_t timNb)
  *********************************************************/
 drvTimerReturn_t DRV_TIMER_Stop(drvTimerNumber_t timNb)
 {
-    UInt hwiTimerKey;
 
     if(!m_TIMERList[timNb].initOk)
     {
@@ -269,6 +268,7 @@ drvTimerReturn_t DRV_TIMER_Stop(drvTimerNumber_t timNb)
     }
 
 #ifdef OS
+    UInt hwiTimerKey;
     hwiTimerKey = Hwi_disable();
     Timer_stop(m_TIMERList[timNb].timerHandle);
     Hwi_restore(hwiTimerKey);
