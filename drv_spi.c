@@ -191,9 +191,6 @@ drvSpiReturn_t DRV_SPI_Init(drvSpiNb_t spiNb, drvSpiConfig_t *pConfig)
 
     pSpiHdl->spiReg->SPICTL.bit.TALK = 1;
 
-    /* For TEST Loopback enabled */
-    //TODO remove
-    pSpiHdl->spiReg->SPICCR.bit.SPILBK = 1;
 
     /* Configure interrupts and callbacks */
     //TODO
@@ -241,6 +238,15 @@ drvSpiReturn_t DRV_SPI_Read(drvSpiNb_t spiNb, void *pDataRx, uint16_t size)
 {
     drvSpiReturn_t ret = SPI_SUCCESS;
     uint16_t *data = (uint16_t*)pDataRx;
+    uint16_t dummy = 0x55AA;
+
+    m_spiHandle[spiNb].spiReg->SPIDAT = dummy;
+
+//    m_spiHandle[spiNb].spiReg->
+    while (m_spiHandle[spiNb].spiReg->SPISTS.bit.INT_FLAG == 0)
+    {
+
+    }
 
     *data = m_spiHandle[spiNb].spiReg->SPIRXBUF;
 
