@@ -1205,13 +1205,13 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO63_GPIO            0
-#define DRV_GPIO_MUX_GPIO63_                0
-#define DRV_GPIO_MUX_GPIO63_                0
-#define DRV_GPIO_MUX_GPIO63_                0
-#define DRV_GPIO_MUX_GPIO63_                0
-#define DRV_GPIO_MUX_GPIO63_                0
-#define DRV_GPIO_MUX_GPIO63_                0
-#define DRV_GPIO_MUX_GPIO63_                0
+#define DRV_GPIO_MUX_GPIO63_SCItXDC         1
+#define DRV_GPIO_MUX_GPIO63_EM1D21          2
+#define DRV_GPIO_MUX_GPIO63_EM2D5           3
+#define DRV_GPIO_MUX_GPIO63_EQEP3B          5
+#define DRV_GPIO_MUX_GPIO63_CANTXA          6
+#define DRV_GPIO_MUX_GPIO63_SD2_C4          7
+#define DRV_GPIO_MUX_GPIO63_SPISIMOB        15
 
 /** \} */
 
@@ -1221,13 +1221,11 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO64_GPIO            0
-#define DRV_GPIO_MUX_GPIO64_                0
-#define DRV_GPIO_MUX_GPIO64_                0
-#define DRV_GPIO_MUX_GPIO64_                0
-#define DRV_GPIO_MUX_GPIO64_                0
-#define DRV_GPIO_MUX_GPIO64_                0
-#define DRV_GPIO_MUX_GPIO64_                0
-#define DRV_GPIO_MUX_GPIO64_                0
+#define DRV_GPIO_MUX_GPIO64_EM1D20          2
+#define DRV_GPIO_MUX_GPIO64_EM2D4           3
+#define DRV_GPIO_MUX_GPIO64_EQEP3S          5
+#define DRV_GPIO_MUX_GPIO64_SCIRXDA         6
+#define DRV_GPIO_MUX_GPIO64_SPISOMIB        15
 
 /** \} */
 
@@ -1237,13 +1235,11 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO65_GPIO            0
-#define DRV_GPIO_MUX_GPIO65_                0
-#define DRV_GPIO_MUX_GPIO65_                0
-#define DRV_GPIO_MUX_GPIO65_                0
-#define DRV_GPIO_MUX_GPIO65_                0
-#define DRV_GPIO_MUX_GPIO65_                0
-#define DRV_GPIO_MUX_GPIO65_                0
-#define DRV_GPIO_MUX_GPIO65_                0
+#define DRV_GPIO_MUX_GPIO65_EM1D19          2
+#define DRV_GPIO_MUX_GPIO65_EM2D3           3
+#define DRV_GPIO_MUX_GPIO65_EQEP3I          5
+#define DRV_GPIO_MUX_GPIO65_SCITXDA         6
+#define DRV_GPIO_MUX_GPIO65_SPICLKB         15
 
 /** \} */
 
@@ -1253,13 +1249,10 @@ extern "C"
  */
 
 #define DRV_GPIO_MUX_GPIO66_GPIO            0
-#define DRV_GPIO_MUX_GPIO66_                0
-#define DRV_GPIO_MUX_GPIO66_                0
-#define DRV_GPIO_MUX_GPIO66_                0
-#define DRV_GPIO_MUX_GPIO66_                0
-#define DRV_GPIO_MUX_GPIO66_                0
-#define DRV_GPIO_MUX_GPIO66_                0
-#define DRV_GPIO_MUX_GPIO66_                0
+#define DRV_GPIO_MUX_GPIO66_EM1D18          2
+#define DRV_GPIO_MUX_GPIO66_EM2D2           3
+#define DRV_GPIO_MUX_GPIO66_I2CSDAB         6
+#define DRV_GPIO_MUX_GPIO66_SPISTEB         15
 
 /** \} */
 
