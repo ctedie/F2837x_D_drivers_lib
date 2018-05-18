@@ -71,11 +71,15 @@ typedef struct
     drvDmaEOTCallback_t callback;
     void* pCallbackData;
 
+    uint16_t dmaIntSrc;
+
 }drvDmaChannelConfig_t;
 
 /* Public variables ------------------------------------------------------------------------------------------------*/
 /* Public functions ------------------------------------------------------------------------------------------------*/
 drvDmaReturn_t DRV_DMA_Init(drvDmaChannelNumber_t chNb, drvDmaChannelConfig_t *pConfig);
+void DRV_DMA_Start(drvDmaChannelNumber_t chNb);
+void DRV_DMA_Stop(drvDmaChannelNumber_t chNb);
 
 #endif /* DRV_DMA_H_ */
 

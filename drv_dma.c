@@ -33,7 +33,7 @@
 /* Type definition  ------------------------------------------------------------------------------------------------*/
 typedef struct
 {
-    struct CH_REGS *channel;
+    volatile struct CH_REGS *channel;
 
     drvDmaEOTCallback_t EOTCallback;
     void *pCallbackData;
@@ -80,7 +80,6 @@ static DMAChannel_t m_dmaChannel[DRV_DMA_NB_CHANNELS] =
 
 
 /* Private functions prototypes ------------------------------------------------------------------------------------*/
-__interrupt static void generalInterrupt(void);
 static void generalIT(drvDmaChannelNumber_t dmaNb);
 
 __interrupt static void channel1IT(void);
@@ -204,15 +203,19 @@ drvDmaReturn_t DRV_DMA_Init(drvDmaChannelNumber_t chNb, drvDmaChannelConfig_t *p
 
     pHandle->EOTCallback = pConfig->callback;
     pHandle->pCallbackData = pConfig->pCallbackData;
+    pHandle->intSrc = pConfig->dmaIntSrc;
+    pHandle->size = pConfig->transferSize;
+    pHandle->src = pConfig->src;
+    pHandle->dest = pConfig->dest;
 
-    EALLOW;
     // DMA initialization
     DMAInitialize();
-    pHandle->channel->SRC_BEG_ADDR_SHADOW = (uint32_t)&pHandle->src;
-    pHandle->channel->SRC_ADDR_SHADOW = (uint32_t)&pHandle->src;
+    EALLOW;
+    pHandle->channel->SRC_BEG_ADDR_SHADOW = (uint32_t)pHandle->src;
+    pHandle->channel->SRC_ADDR_SHADOW = (uint32_t)pHandle->src;
 
-    pHandle->channel->DST_BEG_ADDR_SHADOW = (uint32_t)&pHandle->dest;
-    pHandle->channel->DST_ADDR_SHADOW = (uint32_t)&pHandle->dest;
+    pHandle->channel->DST_BEG_ADDR_SHADOW = (uint32_t)pHandle->dest;
+    pHandle->channel->DST_ADDR_SHADOW = (uint32_t)pHandle->dest;
 
     pHandle->channel->BURST_SIZE.all = 1;
     pHandle->channel->SRC_BURST_STEP = 1;
@@ -225,6 +228,7 @@ drvDmaReturn_t DRV_DMA_Init(drvDmaChannelNumber_t chNb, drvDmaChannelConfig_t *p
     //TODO SOURCE SEL
     /* For test only CH1 */
     DmaClaSrcSelRegs.DMACHSRCSEL1.bit.CH1 = pHandle->intSrc;
+
     pHandle->channel->MODE.bit.PERINTSEL = chNb+1;
     pHandle->channel->MODE.bit.PERINTE = 1;
     pHandle->channel->MODE.bit.ONESHOT = ONESHOT_DISABLE;
@@ -261,6 +265,49 @@ drvDmaReturn_t DRV_DMA_Init(drvDmaChannelNumber_t chNb, drvDmaChannelConfig_t *p
 
     EDIS;
 
+    EALLOW;
+    CpuSysRegs.SECMSEL.bit.PF2SEL = 1;
+    EDIS;
+
+    pHandle->isInit = true;
+
+    return DRV_DMA_SUCCESS;
+}
+
+/**
+ *********************************************************
+ * \brief
+ *
+ * \param [in]      chNb
+ *
+ * \return
+ *********************************************************/
+void DRV_DMA_Start(drvDmaChannelNumber_t chNb)
+{
+    if(m_dmaChannel[chNb].isInit)
+    {
+        EALLOW;
+        m_dmaChannel[chNb].channel->CONTROL.bit.RUN = 1;
+        EDIS;
+    }
+}
+
+/**
+ *********************************************************
+ * \brief
+ *
+ * \param [in]      chNb
+ *
+ * \return
+ *********************************************************/
+void DRV_DMA_Stop(drvDmaChannelNumber_t chNb)
+{
+    if(m_dmaChannel[chNb].isInit)
+    {
+        EALLOW;
+        m_dmaChannel[chNb].channel->CONTROL.bit.HALT = 1;
+        EDIS;
+    }
 }
 
 /** \} */
