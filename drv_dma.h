@@ -67,8 +67,17 @@ typedef struct
 {
     uint16_t transferSize;
     uint16_t burstSize;
-    uint16_t *src;
-    uint16_t *dest;
+    uint16_t srcTransferStep;
+    uint16_t srcBurstStep;
+    uint16_t dstTransferStep;
+    uint16_t dstBurstStep;
+
+    bool oneShotMode;
+    bool continuousTransfer;
+
+    uint16_t *pSrc;
+    uint16_t *pDest;
+
     drvDmaEOTCallback_t callback;
     void* pCallbackData;
 
