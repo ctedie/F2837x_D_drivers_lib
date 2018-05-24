@@ -45,6 +45,8 @@ typedef struct
 
 	bool autoChipSelect;
 	bool isInit;
+
+	bool _useFifo;
 }SPI_Handle_t;
 
 static drvGpioPin_t m_spiPins[NB_SPI][4] =
@@ -61,15 +63,18 @@ SPI_Handle_t m_spiHandle[NB_SPI] =
 {
 	{
 		.spiReg = &SpiaRegs,
-		.isInit = false
+		.isInit = false,
+		._useFifo = false
 	},
 	{
 		.spiReg = &SpibRegs,
-		.isInit = false
+		.isInit = false,
+        ._useFifo = false
 	},
 	{
 		.spiReg = &SpicRegs,
-		.isInit = false
+		.isInit = false,
+        ._useFifo = false
 	}
 };
 /* Private functions prototypes ------------------------------------------------------------------------------------*/
@@ -219,6 +224,33 @@ drvSpiReturn_t DRV_SPI_Init(drvSpiNb_t spiNb, drvSpiConfig_t *pConfig)
 	pSpiHdl->isInit = true;
 
 	return ret;
+}
+
+/**
+ **********************************************************
+ * \brief   Write data to SPI
+ *
+ * \param   [in]    spiNb       The spi number to use
+ * \param   [in]    pDataTx     A pointer to the data to transmit
+ * \param   [in]    size        The number of data to transmit
+ *
+ * \return  One of \ref drvSpiReturn_t values
+ **********************************************************/
+drvSpiReturn_t DRV_SPI_FifoConfig(drvSpiNb_t spiNb, drvSpiFifoConf_t *pConf)
+{
+    drvSpiReturn_t ret = SPI_SUCCESS;
+    SPI_Handle_t *pSpiHdl = &m_spiHandle[spiNb];
+
+    pSpiHdl->spiReg->SPIFFRX.all = 0x2040;             // RX FIFO enabled, clear FIFO int
+    pSpiHdl->spiReg->SPIFFRX.bit.RXFFIENA = 0;      //No interrupt
+    pSpiHdl->spiReg->SPIFFRX.bit.RXFFIL = pConf->rxIntLevel;  // Set RX FIFO level
+
+    pSpiHdl->spiReg->SPIFFTX.all=0xE040;             // FIFOs enabled, TX FIFO released,
+    pSpiHdl->spiReg->SPIFFTX.bit.TXFFIL = pConf->txIntLevel;  // Set TX FIFO level
+
+    pSpiHdl->_useFifo = true;
+
+    return ret;
 }
 
 /**

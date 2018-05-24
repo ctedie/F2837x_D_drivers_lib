@@ -90,6 +90,13 @@ typedef enum
 
 typedef struct
 {
+    uint16_t txIntLevel;
+    uint16_t rxIntLevel;
+
+}drvSpiFifoConf_t;
+
+typedef struct
+{
     drvSpiNetworkMode_t mode;
 	drvSpiSpeed_t speed;
 	drvSpiWordLength_t wordLength;
@@ -102,6 +109,7 @@ typedef struct
 /* Public variables ------------------------------------------------------------------------------------------------*/
 /* Public functions ------------------------------------------------------------------------------------------------*/
 drvSpiReturn_t DRV_SPI_Init(drvSpiNb_t spiNb, drvSpiConfig_t *pConfig);
+drvSpiReturn_t DRV_SPI_FifoConfig(drvSpiNb_t spiNb, drvSpiFifoConf_t *pConf);
 drvSpiReturn_t DRV_SPI_Write(drvSpiNb_t spiNb, void *pDataTx, uint16_t size);
 drvSpiReturn_t DRV_SPI_Read(drvSpiNb_t spiNb, void *pDataRx, uint16_t size);
 drvSpiReturn_t DRV_SPI_ReadWrite(drvSpiNb_t spiNb, void *pDataTx, void *pDataRx, uint16_t size);
