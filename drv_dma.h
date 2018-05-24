@@ -66,6 +66,7 @@ typedef enum
 typedef struct
 {
     uint16_t transferSize;
+    uint16_t burstSize;
     uint16_t *src;
     uint16_t *dest;
     drvDmaEOTCallback_t callback;
@@ -80,6 +81,8 @@ typedef struct
 drvDmaReturn_t DRV_DMA_Init(drvDmaChannelNumber_t chNb, drvDmaChannelConfig_t *pConfig);
 void DRV_DMA_Start(drvDmaChannelNumber_t chNb);
 void DRV_DMA_Stop(drvDmaChannelNumber_t chNb);
+void DRV_DMA_Force(drvDmaChannelNumber_t chNb);
+void DRV_DMA_ClearIT(drvDmaChannelNumber_t chNb);
 
 #endif /* DRV_DMA_H_ */
 

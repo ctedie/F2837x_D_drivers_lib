@@ -217,12 +217,12 @@ drvDmaReturn_t DRV_DMA_Init(drvDmaChannelNumber_t chNb, drvDmaChannelConfig_t *p
     pHandle->channel->DST_BEG_ADDR_SHADOW = (uint32_t)pHandle->dest;
     pHandle->channel->DST_ADDR_SHADOW = (uint32_t)pHandle->dest;
 
-    pHandle->channel->BURST_SIZE.all = 1;
+    pHandle->channel->BURST_SIZE.all = pConfig->burstSize-1;
     pHandle->channel->SRC_BURST_STEP = 1;
     pHandle->channel->DST_BURST_STEP = 0;
 
-    pHandle->channel->TRANSFER_SIZE = pHandle->size;
-    pHandle->channel->SRC_TRANSFER_STEP = 1;
+    pHandle->channel->TRANSFER_SIZE = pHandle->size - 1;
+    pHandle->channel->SRC_TRANSFER_STEP = 0;
     pHandle->channel->DST_TRANSFER_STEP = 0;
 
     //TODO SOURCE SEL
@@ -231,7 +231,7 @@ drvDmaReturn_t DRV_DMA_Init(drvDmaChannelNumber_t chNb, drvDmaChannelConfig_t *p
 
     pHandle->channel->MODE.bit.PERINTSEL = chNb+1;
     pHandle->channel->MODE.bit.PERINTE = 1;
-    pHandle->channel->MODE.bit.ONESHOT = ONESHOT_DISABLE;
+    pHandle->channel->MODE.bit.ONESHOT = ONESHOT_ENABLE;
     pHandle->channel->MODE.bit.CONTINUOUS = CONT_DISABLE;
     pHandle->channel->MODE.bit.OVRINTE = OVRFLOW_DISABLE;
     pHandle->channel->MODE.bit.DATASIZE = SIXTEEN_BIT;
@@ -288,6 +288,42 @@ void DRV_DMA_Start(drvDmaChannelNumber_t chNb)
     {
         EALLOW;
         m_dmaChannel[chNb].channel->CONTROL.bit.RUN = 1;
+        EDIS;
+    }
+}
+
+/**
+ *********************************************************
+ * \brief
+ *
+ * \param [in]      chNb
+ *
+ * \return
+ *********************************************************/
+void DRV_DMA_Force(drvDmaChannelNumber_t chNb)
+{
+    if(m_dmaChannel[chNb].isInit)
+    {
+        EALLOW;
+        m_dmaChannel[chNb].channel->CONTROL.bit.PERINTFRC = 1;
+        EDIS;
+    }
+}
+
+/**
+ *********************************************************
+ * \brief
+ *
+ * \param [in]      chNb
+ *
+ * \return
+ *********************************************************/
+void DRV_DMA_ClearIT(drvDmaChannelNumber_t chNb)
+{
+    if(m_dmaChannel[chNb].isInit)
+    {
+        EALLOW;
+        m_dmaChannel[chNb].channel->CONTROL.bit.PERINTCLR = 1;
         EDIS;
     }
 }
