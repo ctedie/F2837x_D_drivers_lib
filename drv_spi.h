@@ -42,10 +42,39 @@ extern "C"
 /* Public Macro definition -----------------------------------------------------------------------------------------*/
 /* Public Constant definition --------------------------------------------------------------------------------------*/
 /* Public Type definition  -----------------------------------------------------------------------------------------*/
+/**
+ *********************************************************
+ * \brief The receive callback type
+ *
+ * \details The purpose of this function is to get the
+ *          char to received on SPI. \n
+ *          This callback is called as long as the
+ *          receive fifo is not full
+ *
+ * \param [in]  pData    A pointer to user defined arg
+ * \param [in]  car      The read character
+ *********************************************************/
+typedef void (*drvSpiReceiveCallback_t)(uintptr_t pData);
+
+/**
+ *********************************************************
+ * \brief The transmit callback type
+ *
+ * \details The purpose of this function is to get the
+ *          char to send via SPI. \n
+ *          This callback is called when there is
+ *          space in the transmit fifo
+ *
+ * \param [in]  pData    A pointer to user defined arg
+ * \param [out] car      The read character
+ *********************************************************/
+typedef bool (*drvSpiTransmitCallback_t)(uintptr_t pData);
+
 typedef enum
 {
-	SPI_SUCCESS,
-	SPI_ERROR
+	DRV_SPI_SUCCESS,
+	SPI_ERROR,
+	DRV_SPI_BAD_CONFIG
 }drvSpiReturn_t;
 
 typedef enum
@@ -92,8 +121,18 @@ typedef struct
 {
     uint16_t txIntLevel;
     uint16_t rxIntLevel;
+    uint16_t txDelay;
 
+    drvSpiReceiveCallback_t rxCallback;
+    uintptr_t pRxCallbackData;
+    drvSpiTransmitCallback_t txCallbabk;
+    uintptr_t pTxCallbackData;
 }drvSpiFifoConf_t;
+
+typedef struct
+{
+    //TODO
+}drvSpiDmaConf_t;
 
 typedef struct
 {

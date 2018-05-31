@@ -23,30 +23,55 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "F2837xD_device.h"
+#include "F28x_Project.h"
+
+#ifdef OS
+//#undef OS
+#include <ti/sysbios/family/c28/Hwi.h>
+#include <ti/sysbios/knl/Swi.h>
+#endif
 
 #include "mapping.h"
-
+#include "hw_ints.h"
+#include "drv_utils.h"
 #include "drv_gpio.h"
 #include "drv_spi.h"
 
 /* Macro definition ------------------------------------------------------------------------------------------------*/
 /* Constant definition ---------------------------------------------------------------------------------------------*/
 /* Type definition  ------------------------------------------------------------------------------------------------*/
+#ifdef OS
+/** The local hwi paramters structure */
+typedef struct
+{
+    Hwi_Handle rxHwiHandle;
+    Hwi_Params rxHwiParams;
+    Hwi_Handle txHwiHandle;
+    Hwi_Params txHwiParams;
+}HwiParams_t;
+#endif
+
 typedef enum
 {
     CS_LOW = 0,
     CS_HIGH
 }CS_State_t;
+
 typedef struct
 {
 	volatile struct SPI_REGS *spiReg;
 	drvGpioPin_t *cs_pin;
 
 	bool autoChipSelect;
-	bool isInit;
 
+#ifdef OS
+    HwiParams_t hwiConf;
+#endif
+
+	bool isInit;
 	bool _useFifo;
+    uint32_t _RX_ERRORS;
+    uint32_t _TX_ERRORS;
 }SPI_Handle_t;
 
 static drvGpioPin_t m_spiPins[NB_SPI][4] =
@@ -80,6 +105,17 @@ SPI_Handle_t m_spiHandle[NB_SPI] =
 /* Private functions prototypes ------------------------------------------------------------------------------------*/
 drvSpiReturn_t SpiGpioInit(drvSpiNb_t spiNb);
 drvSpiReturn_t SpiSpeedConfig(drvSpiNb_t spiNb, uint32_t speed);
+static void spiGeneralRxIsr(drvSpiNb_t uartNb);
+static void spiGeneralTxIsr(drvSpiNb_t uartNb);
+#ifdef OS
+#else
+static void spiaRxIsr(void);
+static void spiaTxIsr(void);
+static void spibRxIsr(void);
+static void spibTxIsr(void);
+static void spicRxIsr(void);
+static void spicTxIsr(void);
+#endif /* OS */
 /* Private functions -----------------------------------------------------------------------------------------------*/
 /**
  **********************************************************
@@ -97,7 +133,7 @@ drvSpiReturn_t SpiGpioInit(drvSpiNb_t spiNb)
     {
         DRV_GPIO_PinInit(&m_spiPins[spiNb][index]);
     }
-    return SPI_SUCCESS;
+    return DRV_SPI_SUCCESS;
 }
 
 /**
@@ -133,7 +169,7 @@ drvSpiReturn_t SpiSpeedConfig(drvSpiNb_t spiNb, uint32_t speed)
 
     m_spiHandle[spiNb].spiReg->SPIBRR.bit.SPI_BIT_RATE = brr_val;
 
-    return SPI_SUCCESS;
+    return DRV_SPI_SUCCESS;
 }
 
 /**
@@ -147,7 +183,10 @@ drvSpiReturn_t SpiSpeedConfig(drvSpiNb_t spiNb, uint32_t speed)
  **********************************************************/
 drvSpiReturn_t SetCS(drvSpiNb_t spiNb, CS_State_t state)
 {
-    DRV_GPIO_PinSet(&m_spiPins[spiNb][3], state);
+    if(m_spiHandle[spiNb].autoChipSelect == false)
+    {
+        DRV_GPIO_PinSet(&m_spiPins[spiNb][3], (drvGpioPinState_t)state);
+    }
 }
 
 
@@ -164,7 +203,7 @@ drvSpiReturn_t SetCS(drvSpiNb_t spiNb, CS_State_t state)
  **********************************************************/
 drvSpiReturn_t DRV_SPI_Init(drvSpiNb_t spiNb, drvSpiConfig_t *pConfig)
 {
-    drvSpiReturn_t ret = SPI_SUCCESS;
+    drvSpiReturn_t ret = DRV_SPI_SUCCESS;
 	SPI_Handle_t *pSpiHdl = &m_spiHandle[spiNb];
 
 	SpiGpioInit(spiNb);
@@ -228,27 +267,103 @@ drvSpiReturn_t DRV_SPI_Init(drvSpiNb_t spiNb, drvSpiConfig_t *pConfig)
 
 /**
  **********************************************************
- * \brief   Write data to SPI
+ * \brief   Configure the SPI FIFO
  *
  * \param   [in]    spiNb       The spi number to use
- * \param   [in]    pDataTx     A pointer to the data to transmit
- * \param   [in]    size        The number of data to transmit
+ * \param   [in]    pConf       A pointer to fifo configuration structure
  *
  * \return  One of \ref drvSpiReturn_t values
  **********************************************************/
 drvSpiReturn_t DRV_SPI_FifoConfig(drvSpiNb_t spiNb, drvSpiFifoConf_t *pConf)
 {
-    drvSpiReturn_t ret = SPI_SUCCESS;
-    SPI_Handle_t *pSpiHdl = &m_spiHandle[spiNb];
+    drvSpiReturn_t ret = DRV_SPI_SUCCESS;
+    SPI_Handle_t *pHandle = &m_spiHandle[spiNb];
+    uint16_t rxIntNum, txIntNum;
 
-    pSpiHdl->spiReg->SPIFFRX.all = 0x2040;             // RX FIFO enabled, clear FIFO int
-    pSpiHdl->spiReg->SPIFFRX.bit.RXFFIENA = 0;      //No interrupt
-    pSpiHdl->spiReg->SPIFFRX.bit.RXFFIL = pConf->rxIntLevel;  // Set RX FIFO level
+#ifdef OS
 
-    pSpiHdl->spiReg->SPIFFTX.all=0xE040;             // FIFOs enabled, TX FIFO released,
-    pSpiHdl->spiReg->SPIFFTX.bit.TXFFIL = pConf->txIntLevel;  // Set TX FIFO level
+    switch (spiNb)
+    {
+        case SPI_A:
+            rxIntNum = EXTRACT_INT_NUMBER(INT_SPIRXINTA);
+            txIntNum = EXTRACT_INT_NUMBER(INT_SPITXINTA);
 
-    pSpiHdl->_useFifo = true;
+            break;
+        case SPI_B:
+            rxIntNum = EXTRACT_INT_NUMBER(INT_SPIRXINTB);
+            txIntNum = EXTRACT_INT_NUMBER(INT_SPITXINTB);
+
+            break;
+        case SPI_C:
+            rxIntNum = EXTRACT_INT_NUMBER(INT_SPIRXINTC);
+            txIntNum = EXTRACT_INT_NUMBER(INT_SPITXINTC);
+
+            break;
+        default:
+            return DRV_SPI_BAD_CONFIG;
+            break;
+    }
+
+
+#endif
+
+#ifdef OS
+    Hwi_Params_init(&pHandle->hwiConf.rxHwiParams);
+    pHandle->hwiConf.rxHwiParams.arg = pConf->pRxCallbackData;
+    pHandle->hwiConf.rxHwiHandle = Hwi_create(rxIntNum, (Hwi_FuncPtr)pConf->rxCallback, &pHandle->hwiConf.rxHwiParams, NULL);
+    if(pHandle->hwiConf.rxHwiHandle == NULL)
+    {
+        return DRV_SPI_BAD_CONFIG;
+    }
+
+    Hwi_Params_init(&pHandle->hwiConf.txHwiParams);
+    pHandle->hwiConf.txHwiParams.arg = pConf->pTxCallbackData;
+    pHandle->hwiConf.txHwiHandle = Hwi_create(txIntNum, (Hwi_FuncPtr)pConf->txCallbabk, &pHandle->hwiConf.txHwiParams, NULL);
+    if(pHandle->hwiConf.txHwiHandle == NULL)
+    {
+        return DRV_SPI_BAD_CONFIG;
+    }
+#else
+#endif
+
+    pHandle->spiReg->SPIFFRX.all = 0x2040;             // RX FIFO enabled, clear FIFO int
+    pHandle->spiReg->SPIFFRX.bit.RXFFIENA = 0;      //No interrupt
+    pHandle->spiReg->SPIFFRX.bit.RXFFIL = pConf->rxIntLevel;  // Set RX FIFO level
+
+    pHandle->spiReg->SPIFFTX.all=0xE040;             // FIFOs enabled, TX FIFO released,
+    pHandle->spiReg->SPIFFTX.bit.TXFFIL = pConf->txIntLevel;  // Set TX FIFO level
+    pHandle->spiReg->SPIFFCT.bit.TXDLY =pConf->txDelay;
+
+
+
+
+    pHandle->_useFifo = true;
+
+    return ret;
+}
+
+/**
+ **********************************************************
+ * \brief   Configure the SPI DMA
+ *
+ * \param   [in]    spiNb       The spi number to use
+ * \param   [in]    pConf       A pointer to DMA configuration structure
+ *
+ * \return  One of \ref drvSpiReturn_t values
+ **********************************************************/
+drvSpiReturn_t DRV_SPI_DMAConfig(drvSpiNb_t spiNb, drvSpiDmaConf_t *pConf)
+{
+    drvSpiReturn_t ret = DRV_SPI_SUCCESS;
+//    SPI_Handle_t *pSpiHdl = &m_spiHandle[spiNb];
+//
+//    pSpiHdl->spiReg->SPIFFRX.all = 0x2040;             // RX FIFO enabled, clear FIFO int
+//    pSpiHdl->spiReg->SPIFFRX.bit.RXFFIENA = 0;      //No interrupt
+//    pSpiHdl->spiReg->SPIFFRX.bit.RXFFIL = pConf->rxIntLevel;  // Set RX FIFO level
+//
+//    pSpiHdl->spiReg->SPIFFTX.all=0xE040;             // FIFOs enabled, TX FIFO released,
+//    pSpiHdl->spiReg->SPIFFTX.bit.TXFFIL = pConf->txIntLevel;  // Set TX FIFO level
+//    pSpiHdl->spiReg->SPIFFCT.bit.TXDLY =pConf->txDelay;
+//    pSpiHdl->_useFifo = true;
 
     return ret;
 }
@@ -265,7 +380,7 @@ drvSpiReturn_t DRV_SPI_FifoConfig(drvSpiNb_t spiNb, drvSpiFifoConf_t *pConf)
  **********************************************************/
 drvSpiReturn_t DRV_SPI_Write(drvSpiNb_t spiNb, void *pDataTx, uint16_t size)
 {
-    drvSpiReturn_t ret = SPI_SUCCESS;
+    drvSpiReturn_t ret = DRV_SPI_SUCCESS;
     uint16_t *data = (uint16_t*)pDataTx;
     SetCS(spiNb, CS_LOW);
     m_spiHandle[spiNb].spiReg->SPIDAT = *data;
@@ -286,7 +401,7 @@ drvSpiReturn_t DRV_SPI_Write(drvSpiNb_t spiNb, void *pDataTx, uint16_t size)
  **********************************************************/
 drvSpiReturn_t DRV_SPI_Read(drvSpiNb_t spiNb, void *pDataRx, uint16_t size)
 {
-    drvSpiReturn_t ret = SPI_SUCCESS;
+    drvSpiReturn_t ret = DRV_SPI_SUCCESS;
     uint16_t *data = (uint16_t*)pDataRx;
     uint16_t dummy = 0x55AA;
 
@@ -316,7 +431,7 @@ drvSpiReturn_t DRV_SPI_Read(drvSpiNb_t spiNb, void *pDataRx, uint16_t size)
  **********************************************************/
 drvSpiReturn_t DRV_SPI_ReadWrite(drvSpiNb_t spiNb, void *pDataTx, void *pDataRx, uint16_t size)
 {
-    drvSpiReturn_t ret = SPI_SUCCESS;
+    drvSpiReturn_t ret = DRV_SPI_SUCCESS;
 
     uint16_t *txData = (uint16_t*)pDataTx;
     uint16_t *rxData = (uint16_t*)pDataRx;
