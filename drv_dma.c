@@ -24,6 +24,11 @@
 
 #include "F28x_Project.h"
 
+#ifdef OS
+#include <ti/sysbios/family/c28/Hwi.h>
+#include <ti/sysbios/knl/Swi.h>
+#endif
+
 #include "hw_ints.h"
 #include "drv_utils.h"
 #include "drv_dma.h"
@@ -31,12 +36,24 @@
 /* Macro definition ------------------------------------------------------------------------------------------------*/
 /* Constant definition ---------------------------------------------------------------------------------------------*/
 /* Type definition  ------------------------------------------------------------------------------------------------*/
+#ifdef OS
+/** The local hwi paramters structure */
+typedef struct
+{
+    Hwi_Handle dmaHwiHandle;
+    Hwi_Params dmaHwiParams;
+}HwiParams_t;
+#endif
+
 typedef struct
 {
     volatile struct CH_REGS *channel;
 
     drvDmaEOTCallback_t EOTCallback;
     void *pCallbackData;
+#ifdef OS
+    HwiParams_t hwiConf;
+#endif
 
     uint16_t intSrc;
     bool is32bits;
@@ -80,13 +97,19 @@ static DMAChannel_t m_dmaChannel[DRV_DMA_NB_CHANNELS] =
 /* Private functions prototypes ------------------------------------------------------------------------------------*/
 static void generalIT(drvDmaChannelNumber_t dmaNb);
 
+#ifdef OS
+#else
 __interrupt static void channel1IT(void);
 __interrupt static void channel2IT(void);
 __interrupt static void channel3IT(void);
 __interrupt static void channel4IT(void);
 __interrupt static void channel5IT(void);
 __interrupt static void channel6IT(void);
+#endif
+
 /* Private functions -----------------------------------------------------------------------------------------------*/
+#ifdef OS
+#else
 
 /**
  *********************************************************
@@ -141,6 +164,8 @@ __interrupt static void channel6IT(void)
 {
     generalIT(DRV_DMA_CHANNEL6);
 }
+#endif
+
 
 static void generalIT(drvDmaChannelNumber_t dmaNb)
 {
@@ -148,8 +173,10 @@ static void generalIT(drvDmaChannelNumber_t dmaNb)
     {
         m_dmaChannel[dmaNb].EOTCallback(m_dmaChannel[dmaNb].pCallbackData);
     }
-
+#ifdef OS
+#else
     PieCtrlRegs.PIEACK.bit.ACK7 = 1;
+#endif
 }
 
 /* Public functions ------------------------------------------------------------------------------------------------*/
@@ -166,6 +193,7 @@ static void generalIT(drvDmaChannelNumber_t dmaNb)
 drvDmaReturn_t DRV_DMA_Init(drvDmaChannelNumber_t chNb, drvDmaChannelConfig_t *pConfig)
 {
     DMAChannel_t *pHandle;
+    uint16_t dmaIntNum;
 
     if(chNb >= DRV_DMA_NB_CHANNELS)
     {
@@ -184,41 +212,86 @@ drvDmaReturn_t DRV_DMA_Init(drvDmaChannelNumber_t chNb, drvDmaChannelConfig_t *p
     // DMA initialization
     DMAInitialize();
 
-    EALLOW;
+#ifdef OS
+    Hwi_Params_init(&pHandle->hwiConf.dmaHwiParams);
+#endif
+EALLOW;
     switch(chNb)
     {
         case DRV_DMA_CHANNEL1:
+#ifdef OS
+            dmaIntNum = EXTRACT_INT_NUMBER(INT_DMA1INT);
+            pHandle->hwiConf.dmaHwiParams.arg = DRV_DMA_CHANNEL1;
+
+#else
             PieVectTable.DMA_CH1_INT= &channel1IT;
-            DmaClaSrcSelRegs.DMACHSRCSEL1.bit.CH1 = pHandle->intSrc;
             PieCtrlRegs.PIEIER7.bit.INTx1 = 1;
+#endif
+            DmaClaSrcSelRegs.DMACHSRCSEL1.bit.CH1 = pHandle->intSrc;
             break;
         case DRV_DMA_CHANNEL2:
+#ifdef OS
+            dmaIntNum = EXTRACT_INT_NUMBER(INT_DMA2INT);
+            pHandle->hwiConf.dmaHwiParams.arg = DRV_DMA_CHANNEL2;
+#else
             PieVectTable.DMA_CH2_INT= &channel2IT;
-            DmaClaSrcSelRegs.DMACHSRCSEL1.bit.CH2 = pHandle->intSrc;
             PieCtrlRegs.PIEIER7.bit.INTx2 = 1;
+#endif
+            DmaClaSrcSelRegs.DMACHSRCSEL1.bit.CH2 = pHandle->intSrc;
             break;
         case DRV_DMA_CHANNEL3:
+#ifdef OS
+            dmaIntNum = EXTRACT_INT_NUMBER(INT_DMA3INT);
+            pHandle->hwiConf.dmaHwiParams.arg = DRV_DMA_CHANNEL3;
+#else
             PieVectTable.DMA_CH3_INT= &channel3IT;
-            DmaClaSrcSelRegs.DMACHSRCSEL1.bit.CH3 = pHandle->intSrc;
             PieCtrlRegs.PIEIER7.bit.INTx3 = 1;
+#endif
+            DmaClaSrcSelRegs.DMACHSRCSEL1.bit.CH3 = pHandle->intSrc;
             break;
         case DRV_DMA_CHANNEL4:
+#ifdef OS
+            dmaIntNum = EXTRACT_INT_NUMBER(INT_DMA4INT);
+            pHandle->hwiConf.dmaHwiParams.arg = DRV_DMA_CHANNEL4;
+#else
             PieVectTable.DMA_CH4_INT= &channel4IT;
-            DmaClaSrcSelRegs.DMACHSRCSEL1.bit.CH4 = pHandle->intSrc;
             PieCtrlRegs.PIEIER7.bit.INTx4 = 1;
+#endif
+            DmaClaSrcSelRegs.DMACHSRCSEL1.bit.CH4 = pHandle->intSrc;
             break;
         case DRV_DMA_CHANNEL5:
+#ifdef OS
+            dmaIntNum = EXTRACT_INT_NUMBER(INT_DMA5INT);
+            pHandle->hwiConf.dmaHwiParams.arg = DRV_DMA_CHANNEL5;
+#else
             PieVectTable.DMA_CH5_INT= &channel5IT;
-            DmaClaSrcSelRegs.DMACHSRCSEL2.bit.CH5 = pHandle->intSrc;
             PieCtrlRegs.PIEIER7.bit.INTx5 = 1;
+#endif
+            DmaClaSrcSelRegs.DMACHSRCSEL2.bit.CH5 = pHandle->intSrc;
             break;
         case DRV_DMA_CHANNEL6:
+#ifdef OS
+            dmaIntNum = EXTRACT_INT_NUMBER(INT_DMA6INT);
+            pHandle->hwiConf.dmaHwiParams.arg = DRV_DMA_CHANNEL6;
+#else
             PieVectTable.DMA_CH6_INT= &channel6IT;
-            DmaClaSrcSelRegs.DMACHSRCSEL2.bit.CH6 = pHandle->intSrc;
             PieCtrlRegs.PIEIER7.bit.INTx6 = 1;
+#endif
+            DmaClaSrcSelRegs.DMACHSRCSEL2.bit.CH6 = pHandle->intSrc;
             break;
     }
+    EDIS;
 
+#ifdef OS
+    pHandle->hwiConf.dmaHwiHandle = Hwi_create(dmaIntNum, (Hwi_FuncPtr)generalIT, &pHandle->hwiConf.dmaHwiParams, NULL);
+    if(pHandle->hwiConf.dmaHwiHandle == NULL)
+    {
+        return DRV_DMA_BAD_CONFIG;
+    }
+
+#endif
+
+    EALLOW;
     pHandle->channel->SRC_BEG_ADDR_SHADOW = (uint32_t)pConfig->pSrc;
     pHandle->channel->SRC_ADDR_SHADOW = (uint32_t)pConfig->pSrc;
 

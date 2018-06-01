@@ -48,7 +48,7 @@ typedef enum
     DRV_DMA_ERROR,
     DRV_DMA_NOT_INIT,
     DRV_DMA_BAD_CONFIG,
-    DRV_DMA_ALREADY_INIT
+    DRV_DMA_ALREADY_USED
 }drvDmaReturn_t;
 
 typedef enum
