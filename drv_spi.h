@@ -38,6 +38,7 @@ extern "C"
 #include <string.h>
 
 #include "F2837xD_device.h"
+#include "drv_dma.h"
 
 /* Public Macro definition -----------------------------------------------------------------------------------------*/
 /* Public Constant definition --------------------------------------------------------------------------------------*/
@@ -73,7 +74,7 @@ typedef bool (*drvSpiTransmitCallback_t)(uintptr_t pData);
 typedef enum
 {
 	DRV_SPI_SUCCESS,
-	SPI_ERROR,
+	DRV_SPI_ERROR,
 	DRV_SPI_BAD_CONFIG
 }drvSpiReturn_t;
 
@@ -131,7 +132,9 @@ typedef struct
 
 typedef struct
 {
-    //TODO
+    drvDmaChannelConfig_t *pDMAConfig;
+    drvSpiFifoConf_t *pFifoConfig;
+
 }drvSpiDmaConf_t;
 
 typedef struct
@@ -149,6 +152,7 @@ typedef struct
 /* Public functions ------------------------------------------------------------------------------------------------*/
 drvSpiReturn_t DRV_SPI_Init(drvSpiNb_t spiNb, drvSpiConfig_t *pConfig);
 drvSpiReturn_t DRV_SPI_FifoConfig(drvSpiNb_t spiNb, drvSpiFifoConf_t *pConf);
+drvSpiReturn_t DRV_SPI_DMAConfig(drvSpiNb_t spiNb, drvDmaChannelNumber_t dmaCh, drvSpiDmaConf_t *pConf);
 drvSpiReturn_t DRV_SPI_Write(drvSpiNb_t spiNb, void *pDataTx, uint16_t size);
 drvSpiReturn_t DRV_SPI_Read(drvSpiNb_t spiNb, void *pDataRx, uint16_t size);
 drvSpiReturn_t DRV_SPI_ReadWrite(drvSpiNb_t spiNb, void *pDataTx, void *pDataRx, uint16_t size);

@@ -36,6 +36,7 @@
 #include "drv_utils.h"
 #include "drv_gpio.h"
 #include "drv_spi.h"
+#include "drv_dma.h"
 
 /* Macro definition ------------------------------------------------------------------------------------------------*/
 /* Constant definition ---------------------------------------------------------------------------------------------*/
@@ -61,7 +62,6 @@ typedef struct
 {
 	volatile struct SPI_REGS *spiReg;
 	drvGpioPin_t *cs_pin;
-
 	bool autoChipSelect;
 
 #ifdef OS
@@ -69,7 +69,9 @@ typedef struct
 #endif
 
 	bool isInit;
-	bool _useFifo;
+    bool _useFifo;
+    bool _useDMA;
+	drvDmaChannelNumber_t _dmaCh;
     uint32_t _RX_ERRORS;
     uint32_t _TX_ERRORS;
 }SPI_Handle_t;
@@ -153,7 +155,7 @@ drvSpiReturn_t SpiSpeedConfig(drvSpiNb_t spiNb, uint32_t speed)
     if(ClkCfgRegs.LOSPCP.bit.LSPCLKDIV == 0)
     {
         //TODO
-        return SPI_ERROR;
+        return DRV_SPI_ERROR;
     }
     else
     {
@@ -187,6 +189,32 @@ drvSpiReturn_t SetCS(drvSpiNb_t spiNb, CS_State_t state)
     {
         DRV_GPIO_PinSet(&m_spiPins[spiNb][3], (drvGpioPinState_t)state);
     }
+}
+
+/**
+ **********************************************************
+ * \brief The genreral interrupt handler.
+ *        Each default handler call this function with
+ *        their own SCI Number
+ *
+ * \param [in]    uartNb  The SCI number
+ **********************************************************/
+static void spiGeneralRxIsr(drvSpiNb_t uartNb)
+{
+
+}
+
+/**
+ **********************************************************
+ * \brief   The global Tx interrupt function
+ *
+ * \param [in]    uartNb  The SCI number
+ *
+ * \return
+ **********************************************************/
+static void spiGeneralTxIsr(drvSpiNb_t uartNb)
+{
+
 }
 
 
@@ -280,51 +308,50 @@ drvSpiReturn_t DRV_SPI_FifoConfig(drvSpiNb_t spiNb, drvSpiFifoConf_t *pConf)
     SPI_Handle_t *pHandle = &m_spiHandle[spiNb];
     uint16_t rxIntNum, txIntNum;
 
-#ifdef OS
-
-    switch (spiNb)
-    {
-        case SPI_A:
-            rxIntNum = EXTRACT_INT_NUMBER(INT_SPIRXINTA);
-            txIntNum = EXTRACT_INT_NUMBER(INT_SPITXINTA);
-
-            break;
-        case SPI_B:
-            rxIntNum = EXTRACT_INT_NUMBER(INT_SPIRXINTB);
-            txIntNum = EXTRACT_INT_NUMBER(INT_SPITXINTB);
-
-            break;
-        case SPI_C:
-            rxIntNum = EXTRACT_INT_NUMBER(INT_SPIRXINTC);
-            txIntNum = EXTRACT_INT_NUMBER(INT_SPITXINTC);
-
-            break;
-        default:
-            return DRV_SPI_BAD_CONFIG;
-            break;
-    }
-
-
-#endif
-
-#ifdef OS
-    Hwi_Params_init(&pHandle->hwiConf.rxHwiParams);
-    pHandle->hwiConf.rxHwiParams.arg = pConf->pRxCallbackData;
-    pHandle->hwiConf.rxHwiHandle = Hwi_create(rxIntNum, (Hwi_FuncPtr)pConf->rxCallback, &pHandle->hwiConf.rxHwiParams, NULL);
-    if(pHandle->hwiConf.rxHwiHandle == NULL)
-    {
-        return DRV_SPI_BAD_CONFIG;
-    }
-
-    Hwi_Params_init(&pHandle->hwiConf.txHwiParams);
-    pHandle->hwiConf.txHwiParams.arg = pConf->pTxCallbackData;
-    pHandle->hwiConf.txHwiHandle = Hwi_create(txIntNum, (Hwi_FuncPtr)pConf->txCallbabk, &pHandle->hwiConf.txHwiParams, NULL);
-    if(pHandle->hwiConf.txHwiHandle == NULL)
-    {
-        return DRV_SPI_BAD_CONFIG;
-    }
-#else
-#endif
+//#ifdef OS
+//
+//    switch (spiNb)
+//    {
+//        case SPI_A:
+//            rxIntNum = EXTRACT_INT_NUMBER(INT_SPIRXINTA);
+//            txIntNum = EXTRACT_INT_NUMBER(INT_SPITXINTA);
+//
+//            break;
+//        case SPI_B:
+//            rxIntNum = EXTRACT_INT_NUMBER(INT_SPIRXINTB);
+//            txIntNum = EXTRACT_INT_NUMBER(INT_SPITXINTB);
+//
+//            break;
+//        case SPI_C:
+//            rxIntNum = EXTRACT_INT_NUMBER(INT_SPIRXINTC);
+//            txIntNum = EXTRACT_INT_NUMBER(INT_SPITXINTC);
+//
+//            break;
+//        default:
+//            return DRV_SPI_BAD_CONFIG;
+//    }
+//
+//
+//#endif
+//
+//#ifdef OS
+//    Hwi_Params_init(&pHandle->hwiConf.rxHwiParams);
+//    pHandle->hwiConf.rxHwiParams.arg = pConf->pRxCallbackData;
+//    pHandle->hwiConf.rxHwiHandle = Hwi_create(rxIntNum, (Hwi_FuncPtr)pConf->rxCallback, &pHandle->hwiConf.rxHwiParams, NULL);
+//    if(pHandle->hwiConf.rxHwiHandle == NULL)
+//    {
+//        return DRV_SPI_BAD_CONFIG;
+//    }
+//
+//    Hwi_Params_init(&pHandle->hwiConf.txHwiParams);
+//    pHandle->hwiConf.txHwiParams.arg = pConf->pTxCallbackData;
+//    pHandle->hwiConf.txHwiHandle = Hwi_create(txIntNum, (Hwi_FuncPtr)pConf->txCallbabk, &pHandle->hwiConf.txHwiParams, NULL);
+//    if(pHandle->hwiConf.txHwiHandle == NULL)
+//    {
+//        return DRV_SPI_BAD_CONFIG;
+//    }
+//#else
+//#endif
 
     pHandle->spiReg->SPIFFRX.all = 0x2040;             // RX FIFO enabled, clear FIFO int
     pHandle->spiReg->SPIFFRX.bit.RXFFIENA = 0;      //No interrupt
@@ -351,19 +378,27 @@ drvSpiReturn_t DRV_SPI_FifoConfig(drvSpiNb_t spiNb, drvSpiFifoConf_t *pConf)
  *
  * \return  One of \ref drvSpiReturn_t values
  **********************************************************/
-drvSpiReturn_t DRV_SPI_DMAConfig(drvSpiNb_t spiNb, drvSpiDmaConf_t *pConf)
+drvSpiReturn_t DRV_SPI_DMAConfig(drvSpiNb_t spiNb, drvDmaChannelNumber_t dmaCh, drvSpiDmaConf_t *pConf)
 {
     drvSpiReturn_t ret = DRV_SPI_SUCCESS;
-//    SPI_Handle_t *pSpiHdl = &m_spiHandle[spiNb];
-//
-//    pSpiHdl->spiReg->SPIFFRX.all = 0x2040;             // RX FIFO enabled, clear FIFO int
-//    pSpiHdl->spiReg->SPIFFRX.bit.RXFFIENA = 0;      //No interrupt
-//    pSpiHdl->spiReg->SPIFFRX.bit.RXFFIL = pConf->rxIntLevel;  // Set RX FIFO level
-//
-//    pSpiHdl->spiReg->SPIFFTX.all=0xE040;             // FIFOs enabled, TX FIFO released,
-//    pSpiHdl->spiReg->SPIFFTX.bit.TXFFIL = pConf->txIntLevel;  // Set TX FIFO level
-//    pSpiHdl->spiReg->SPIFFCT.bit.TXDLY =pConf->txDelay;
-//    pSpiHdl->_useFifo = true;
+
+    SPI_Handle_t *pSpiHdl = &m_spiHandle[spiNb];
+
+    if(DRV_DMA_Init(dmaCh, pConf->pDMAConfig) != DRV_DMA_SUCCESS)
+    {
+        return DRV_SPI_ERROR;
+    }
+
+    pSpiHdl->_dmaCh = dmaCh;
+    pSpiHdl->spiReg->SPIFFRX.all = 0x2040;             // RX FIFO enabled, clear FIFO int
+    pSpiHdl->spiReg->SPIFFRX.bit.RXFFIENA = 0;      //No interrupt
+    pSpiHdl->spiReg->SPIFFRX.bit.RXFFIL = pConf->pFifoConfig->rxIntLevel;  // Set RX FIFO level
+
+    pSpiHdl->spiReg->SPIFFTX.all=0xE040;             // FIFOs enabled, TX FIFO released,
+    pSpiHdl->spiReg->SPIFFTX.bit.TXFFIL = pConf->pFifoConfig->txIntLevel;  // Set TX FIFO level
+    pSpiHdl->spiReg->SPIFFCT.bit.TXDLY =pConf->pFifoConfig->txDelay;
+    pSpiHdl->_useFifo = true;
+    pSpiHdl->_useDMA = true;
 
     return ret;
 }
